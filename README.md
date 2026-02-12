@@ -46,7 +46,7 @@ Media Tracker — это клиент-серверное веб-приложен
 **Инструкция по запуску:**
 
 1. Клонируйте репозиторий:
-   > git clone https://github.com/your-username/media-tracker.git 
+   > git clone https://github.com/darfe-e/MediaTracker 
 
    > cd media-tracker
 
