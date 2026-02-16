@@ -1,0 +1,31 @@
+package org.example.animetracker.controller;
+
+import lombok.AllArgsConstructor;
+import org.example.animetracker.dto.UserDto;
+import org.example.animetracker.service.UserService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@AllArgsConstructor
+@RestController
+@RequestMapping("/users")
+public class UserController {
+
+  private final UserService userService;
+
+  @PostMapping
+  public ResponseEntity<UserDto> createUser(@RequestParam String name) {
+    UserDto created = userService.createUser(name);
+    return ResponseEntity.status(HttpStatus.CREATED).body(created);
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    boolean deleted = userService.deleteUser(id);
+    if (!deleted) {
+      return ResponseEntity.notFound().build();
+    }
+    return ResponseEntity.noContent().build();
+  }
+}
