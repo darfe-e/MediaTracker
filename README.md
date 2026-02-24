@@ -85,5 +85,31 @@ Checkstyle: код приведён к Google Java Style.
 ## Инструкция по использованию
 
 На текущем этапе взаимодействие с приложением осуществляется исключительно через REST API.
-
 Для тестирования можно использовать Postman.
+
+**Базовые URL**
+
+- /anime-catalogue - Каталог со всеми аним е	
+- /users - Пользователи
+- /anime-collection - Коллекция пользователя	
+
+**Основные эндпоинты**
+
+**Каталог аниме**
+- GET /anime-catalogue – список аниме (фильтрация по studio, title)
+- GET /anime-catalogue/{id} – детальная информация об аниме (с сезонами и эпизодами)
+- GET /anime-catalogue/{id}/with-details – оптимизированная загрузка с join fetch (один запрос)
+- POST /anime-catalogue – создание нового аниме
+- PUT /anime-catalogue/{id} – обновление данных аниме
+- DELETE /anime-catalogue/{id} – удаление аниме
+
+**Пользователи**
+- POST /users?name=... – регистрация пользователя
+- DELETE /users/{id} – удаление пользователя
+
+**Коллекции пользователей**
+- GET /anime-collection?userId=... – список аниме пользователя (с сортировкой по оценке)
+- GET /anime-collection/{animeId}?userId=... – детальная информация о конкретном аниме в коллекции
+- POST /anime-collection?userId=...&animeId=... – добавить аниме в коллекцию
+- PUT /anime-collection/{animeId}?userId=... – обновить оценку и/или рецензию
+- DELETE /anime-collection/{animeId}?userId=... – удалить аниме из коллекции
