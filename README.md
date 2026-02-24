@@ -113,3 +113,7 @@ Checkstyle: код приведён к Google Java Style.
 - POST /anime-collection?userId=...&animeId=... – добавить аниме в коллекцию
 - PUT /anime-collection/{animeId}?userId=... – обновить оценку и/или рецензию
 - DELETE /anime-collection/{animeId}?userId=... – удалить аниме из коллекции
+
+## Проверка в SonarCloud
+
+ >https://sonarcloud.io/project/configuration/AutoScan?id=darfe-e_MediaTracker

@@ -45,7 +45,19 @@ public class AnimeService {
   @Transactional(readOnly = true)
   public AnimeDetailedDto findByIdWithoutProblem(Long id) {
     return animeRepository.findByIdWithDetails(id)
-        .map(AnimeMapper::animeToDetailedDto)
+        .map(anime -> {
+          AnimeDetailedDto dto = AnimeMapper.animeToDetailedDto(anime);
+
+          if (dto.getSeasons() != null) {
+            List<SeasonDto> sortedSeasons = dto.getSeasons().stream()
+                .sorted((s1, s2) ->
+                    Integer.compare(s2.getEpisodes().size(), s1.getEpisodes().size()))
+                .toList();
+            dto.setSeasons(sortedSeasons);
+          }
+
+          return dto;
+        })
         .orElse(null);
   }
 
