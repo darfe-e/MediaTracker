@@ -27,12 +27,14 @@ Anime Tracker — это клиент-серверное веб-приложен
 
 Модели и архитектура:
 
-- Сущности: Anime, Season, Episode, User, AnimeUser (связь пользователя с аниме).
+- Сущности: Anime, Season, Episode, User, AnimeUser, Genre (связь пользователя с аниме).
 - Многослойная архитектура: Controller → Service → Repository (in-memory хранилище).
 - Полноценные DTO и ручные мапперы для всех объектов.
 - Корректная обработка циклических ссылок при сериализации JSON.
-
-Инициализация данных: при запуске создаются два тестовых аниме («Тетрадь смерти», «Эхо террора») с сезонами и эпизодами.
+- Реляционная база данных PostgreSQL с JPA/Hibernate.
+- Связи: @OneToMany/@ManyToOne (аниме ↔ сезоны ↔ эпизоды, пользователи ↔ коллекция), @ManyToMany (аниме ↔ жанры).
+- Настроены каскадные операции (CascadeType.ALL) и типы загрузки (FetchType.LAZY/EAGER).
+- Демонстрация атомарности транзакций с @Transactional: частичное сохранение без транзакции и полный откат при ошибке.
 
 Обработка ошибок: все эндпоинты возвращают соответствующие HTTP-статусы (200, 201, 400, 404, 204).
 
@@ -46,7 +48,8 @@ Checkstyle: код приведён к Google Java Style.
 - Spring Boot 3
 - Maven
 - Spring Web (REST-контроллеры)
-- In-memory (коллекции Java)
+- Spring Data JPA / Hibernate
+- PostgreSQL
 - Ручной маппер (класс-утилита)
 - Lombok (геттеры, сеттеры, конструкторы)
 - Checkstyle (Google Java Style)
@@ -66,15 +69,18 @@ Checkstyle: код приведён к Google Java Style.
 1. Клонируйте репозиторий:
    > git clone https://github.com/darfe-e/MediaTracker
 
-   > cd media-tracker
+   > cd MediaTracker
 
-2. Соберите и запустите приложение:
+2. Создайте базу данных в PostgreSQL:
+   > CREATE DATABASE anime_tracker_db;
+
+3. Соберите и запустите приложение:
    > mvn spring-boot:run
 
-3. После запуска API будет доступен по адресу:
+4. После запуска API будет доступен по адресу:
    > http://localhost:8080
 
-4. Остановка приложения — Ctrl+C в терминале с запущенным Spring Boot.
+5. Остановка приложения — Ctrl+C в терминале с запущенным Spring Boot.
 
 ## Инструкция по использованию
 

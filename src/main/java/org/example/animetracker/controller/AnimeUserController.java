@@ -1,21 +1,28 @@
 package org.example.animetracker.controller;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.example.animetracker.dto.AnimeUserDetailedDto;
 import org.example.animetracker.dto.AnimeUserDto;
-import org.example.animetracker.service.UserAnimeService;
+import org.example.animetracker.service.AnimeUserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @AllArgsConstructor
 @RestController
 @RequestMapping("/anime-collection")
-public class UserAnimeController {
+public class AnimeUserController {
 
-  private final UserAnimeService userAnimeService;
+  private final AnimeUserService userAnimeService;
 
   @GetMapping
   public ResponseEntity<List<AnimeUserDto>> getAllInCollection(@RequestParam Long userId) {
@@ -38,7 +45,7 @@ public class UserAnimeController {
   public ResponseEntity<AnimeUserDto> putAnimeToCollection(
       @RequestParam Long userId,
       @RequestParam Long animeId) {
-    AnimeUserDto created = userAnimeService.save(animeId, userId);
+    AnimeUserDto created = userAnimeService.addAnimeToCollection(animeId, userId);
     if (created == null) {
       return ResponseEntity.badRequest().build();
     }
@@ -56,7 +63,10 @@ public class UserAnimeController {
     if (dto.getAnime() != null && !animeId.equals(dto.getAnime().getId())) {
       return ResponseEntity.badRequest().build();
     }
-    AnimeUserDetailedDto updated = userAnimeService.setUserInformation(userId, animeId, dto);
+    Float assessment = dto.getAssessment();
+    String review = dto.getReview();
+    AnimeUserDetailedDto updated = userAnimeService.updateUserInfo(
+        userId, animeId, assessment, review);
     if (updated == null) {
       return ResponseEntity.notFound().build();
     }
@@ -67,11 +77,10 @@ public class UserAnimeController {
   public ResponseEntity<Void> deleteConnection(
       @RequestParam Long userId,
       @PathVariable Long animeId) {
-    boolean isDeleted = userAnimeService.remove(userId, animeId);
+    boolean isDeleted = userAnimeService.removeConnection(userId, animeId);
     if (!isDeleted) {
       return ResponseEntity.notFound().build();
     }
     return ResponseEntity.noContent().build();
   }
-
 }

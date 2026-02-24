@@ -20,12 +20,10 @@ public class EpisodeMapper {
       return null;
     }
     Episode episode = new Episode();
-    episode.setId(null);
     episode.setTitle(dto.getTitle());
     episode.setNumber(dto.getNumber());
     episode.setReleaseDate(dto.getReleaseDate());
     episode.setIsReleased(dto.getIsReleased());
-    episode.setSeason(null);
     return episode;
   }
 }

@@ -1,11 +1,15 @@
 package org.example.animetracker.mapper;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
+import org.example.animetracker.dto.SeasonDto;
 import org.example.animetracker.model.Anime;
+import org.example.animetracker.model.Season;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AnimeMapper {
@@ -26,15 +30,14 @@ public class AnimeMapper {
         anime.getTitle(),
         anime.getNumOfReleasedSeasons(),
         anime.getStudio(),
-        anime.getSeasons() == null ? new ArrayList<>() :
-            anime.getSeasons().stream()
-                .map(SeasonMapper::seasonToDto)
-                .toList(),
+        new ArrayList<>(new HashSet<>(anime.getSeasons())).stream()
+            .map(SeasonMapper::seasonToDto)
+            .toList(),
         anime.getIsOngoing()
     );
   }
 
-  public static Anime dtoToAnime(AnimeDto dto) {
+  public static Anime deteiledDtoToAnime(AnimeDetailedDto dto) {
     if (dto == null) {
       return null;
     }
@@ -45,30 +48,17 @@ public class AnimeMapper {
     anime.setStudio(dto.getStudio());
     anime.setIsOngoing(dto.getIsOngoing());
     anime.setPopularityRank(null);
-    anime.setSeasons(new ArrayList<>());
-    return anime;
-  }
 
-  public static Anime dtoToAnime(AnimeDetailedDto dto) {
-    if (dto == null) {
-      return null;
-    }
-    Anime anime = new Anime();
-    anime.setId(dto.getId());
-    anime.setTitle(dto.getTitle());
-    anime.setNumOfReleasedSeasons(dto.getNumOfReleasedSeasons());
-    anime.setStudio(dto.getStudio());
-    anime.setIsOngoing(dto.getIsOngoing());
-    anime.setPopularityRank(null);
     if (dto.getSeasons() != null) {
-      anime.setSeasons(
-          dto.getSeasons().stream()
-              .map(SeasonMapper::dtoToSeason)
-              .toList()
-      );
-    } else {
-      anime.setSeasons(new ArrayList<>());
+      Set<Season> seasons = new HashSet<>(); // Используем HashSet
+      for (SeasonDto seasonDto : dto.getSeasons()) {
+        Season season = SeasonMapper.dtoToSeason(seasonDto);
+        season.setAnime(anime);
+        seasons.add(season);
+      }
+      anime.setSeasons(seasons);
     }
     return anime;
   }
 }
+

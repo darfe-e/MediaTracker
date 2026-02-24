@@ -14,16 +14,17 @@ public class UserService {
   private final UserRepository userRepository;
 
   public UserDto createUser(String name) {
-    User user = new User(null, name);
+    User user = new User();
+    user.setName(name);
     User saved = userRepository.save(user);
     return UserMapper.userToDto(saved);
   }
 
   public boolean deleteUser(Long id) {
-    if (userRepository.findById(id) == null) {
+    if (!userRepository.existsById(id)) {
       return false;
     }
-    userRepository.deleteUserById(id);
+    userRepository.deleteById(id);
     return true;
   }
 }

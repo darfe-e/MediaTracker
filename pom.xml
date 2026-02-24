@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>org.example</groupId>
-    <artifactId>mediatracker</artifactId>
+    <artifactId>MediaTracker</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>media_tracker</name>
     <description>media_tracker</description>
@@ -44,6 +44,20 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <!-- Обратите внимание: версию здесь можно не указывать, она будет унаследована от spring-boot-starter-parent -->
+        </dependency>
+
+        <!-- PostgreSQL Driver (используем проверенную версию) -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.7</version> <!-- Заменили на 42.7.7, она точно есть [citation:2] -->
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 
