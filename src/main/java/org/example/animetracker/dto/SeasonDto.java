@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SeasonDto {
-  private Integer seasonNumber;
   private LocalDate releaseDate;
   private Boolean isReleased;
   private List<EpisodeDto> episodes = new ArrayList<>();

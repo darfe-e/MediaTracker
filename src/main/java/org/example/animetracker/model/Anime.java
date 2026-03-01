@@ -32,7 +32,7 @@ public class Anime {
   private String studio;
 
   @OneToMany(mappedBy = "anime", cascade = CascadeType.ALL)
-  private Set<Season> seasons = new HashSet<>(); // List -> Set
+  private Set<Season> seasons = new HashSet<>();
 
   private Integer popularityRank;
   private Boolean isOngoing;
@@ -43,10 +43,10 @@ public class Anime {
       joinColumns = @JoinColumn(name = "anime_id"),
       inverseJoinColumns = @JoinColumn(name = "genre_id")
   )
-  private Set<Genre> genres = new HashSet<>(); // List -> Set
+  private Set<Genre> genres = new HashSet<>();
 
   @OneToMany(mappedBy = "anime", cascade = CascadeType.ALL, orphanRemoval = true)
-  private Set<AnimeUser> animeUsers = new HashSet<>(); // List -> Set
+  private Set<FavoriteAnime> animeUsers = new HashSet<>();
 
   public Anime(String title, Integer numOfReleasedSeasons, String studio,
                Set<Season> seasons, Integer popularityRank) {

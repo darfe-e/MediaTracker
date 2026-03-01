@@ -2,16 +2,16 @@ package org.example.animetracker.repository;
 
 import java.util.List;
 import java.util.Optional;
-import org.example.animetracker.model.AnimeUser;
+import org.example.animetracker.model.FavoriteAnime;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface AnimeUserRepository extends JpaRepository<AnimeUser, Long> {
+public interface FavoriteAnimeRepository extends JpaRepository<FavoriteAnime, Long> {
 
   @EntityGraph(attributePaths = {"user", "anime"})
-  List<AnimeUser> findByUserId(Long userId);
+  List<FavoriteAnime> findByUserId(Long userId);
 
   @EntityGraph(attributePaths = {"user", "anime"})
-  Optional<AnimeUser> findByUserIdAndAnimeId(Long userId, Long animeId);
+  Optional<FavoriteAnime> findByUserIdAndAnimeId(Long userId, Long animeId);
 
 }

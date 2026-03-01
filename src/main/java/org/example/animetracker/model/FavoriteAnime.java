@@ -13,11 +13,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "anime_user")
+@Table(name = "favorite_anime")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AnimeUser {
+public class FavoriteAnime {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,10 +31,7 @@ public class AnimeUser {
   @JoinColumn(name = "anime_id", nullable = false)
   private Anime anime;
 
-  private Float assessment;
-  private String review;
-
-  public AnimeUser(User user, Anime anime) {
+  public FavoriteAnime(User user, Anime anime) {
     this.user = user;
     this.anime = anime;
   }

@@ -5,8 +5,8 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class AnimeUserDto {
+public class FavoriteAnimeDto {
+  private Long id;
   private UserDto user;
   private final AnimeDto anime;
-  private Float assessment;
 }

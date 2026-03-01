@@ -27,5 +27,5 @@ public class User {
   private String name;
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<AnimeUser> animeUsers = new ArrayList<>();
+  private List<FavoriteAnime> animeUsers = new ArrayList<>();
 }

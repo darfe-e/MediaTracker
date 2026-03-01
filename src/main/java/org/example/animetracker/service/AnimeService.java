@@ -1,6 +1,7 @@
 package org.example.animetracker.service;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -90,21 +91,21 @@ public class AnimeService {
 
   public void createAnimeWithSeasonsWithoutTransaction(AnimeDetailedDto dto) {
     Anime anime = AnimeMapper.deteiledDtoToAnime(dto);
+    anime.setSeasons(new HashSet<>());
     anime = animeRepository.save(anime);
 
-    for (SeasonDto seasonDto : dto.getSeasons()) {
-      Season season = SeasonMapper.dtoToSeason(seasonDto);
-      season.setAnime(anime);
-      season = seasonRepository.save(season);
+    SeasonDto firstSeasonDto = dto.getSeasons().get(0);
+    Season firstSeason = SeasonMapper.dtoToSeason(firstSeasonDto);
+    firstSeason.setAnime(anime);
+    firstSeason = seasonRepository.save(firstSeason);
 
-      for (EpisodeDto episodeDto : seasonDto.getEpisodes()) {
-        Episode episode = EpisodeMapper.dtoToEpisode(episodeDto);
-        episode.setSeason(season);
-        episodeRepository.save(episode);
-      }
+    for (EpisodeDto episodeDto : firstSeasonDto.getEpisodes()) {
+      Episode episode = EpisodeMapper.dtoToEpisode(episodeDto);
+      episode.setSeason(firstSeason);
+      episodeRepository.save(episode);
     }
 
-    throw new IllegalStateException("Ошибка после сохранения аниме и сезонов");
+    throw new IllegalStateException("Ошибка после сохранения аниме, первого сезона и его эпизодов");
   }
 
   @Transactional
@@ -112,19 +113,22 @@ public class AnimeService {
     Anime anime = AnimeMapper.deteiledDtoToAnime(dto);
     anime = animeRepository.save(anime);
 
-    for (SeasonDto seasonDto : dto.getSeasons()) {
-      Season season = SeasonMapper.dtoToSeason(seasonDto);
-      season.setAnime(anime);
-      season = seasonRepository.save(season);
+    SeasonDto firstSeasonDto = dto.getSeasons().get(0);
+    Season firstSeason = SeasonMapper.dtoToSeason(firstSeasonDto);
+    firstSeason.setAnime(anime);
+    firstSeason = seasonRepository.save(firstSeason);
 
-      for (EpisodeDto episodeDto : seasonDto.getEpisodes()) {
-        Episode episode = EpisodeMapper.dtoToEpisode(episodeDto);
-        episode.setSeason(season);
-        episodeRepository.save(episode);
-      }
+    for (EpisodeDto episodeDto : firstSeasonDto.getEpisodes()) {
+      Episode episode = EpisodeMapper.dtoToEpisode(episodeDto);
+      episode.setSeason(firstSeason);
+      episodeRepository.save(episode);
     }
 
-    throw new IllegalStateException("Ошибка после всех сохранений");
+    Season extraSeason = new Season();
+    extraSeason.setAnime(anime);
+    seasonRepository.save(extraSeason);
+
+    throw new IllegalStateException("Ошибка после сохранения аниме");
   }
 }
 

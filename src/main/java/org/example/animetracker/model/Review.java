@@ -5,29 +5,26 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table (name = "episodes")
+@Table(name = "reviews")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Episode {
+public class Review {
   @Id
-  @GeneratedValue (strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  private String title;
-  private Integer number;
-  private LocalDate releaseDate;
+  @OneToOne
+  @JoinColumn(name = "favorite_id", nullable = false, unique = true)
+  private FavoriteAnime favorite;
 
-  @ManyToOne
-  @JoinColumn(name = "season_id", nullable = false)
-  private Season season;
-
+  private Float assessment;
+  private String text;
 }

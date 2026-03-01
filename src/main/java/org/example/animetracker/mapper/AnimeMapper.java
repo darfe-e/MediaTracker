@@ -48,15 +48,16 @@ public class AnimeMapper {
     anime.setStudio(dto.getStudio());
     anime.setIsOngoing(dto.getIsOngoing());
     anime.setPopularityRank(null);
-
     if (dto.getSeasons() != null) {
-      Set<Season> seasons = new HashSet<>(); // Используем HashSet
+      Set<Season> seasons = new HashSet<>();
       for (SeasonDto seasonDto : dto.getSeasons()) {
         Season season = SeasonMapper.dtoToSeason(seasonDto);
         season.setAnime(anime);
         seasons.add(season);
       }
       anime.setSeasons(seasons);
+    } else {
+      anime.setSeasons(new HashSet<>());
     }
     return anime;
   }

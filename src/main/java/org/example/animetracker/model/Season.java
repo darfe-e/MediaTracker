@@ -28,12 +28,12 @@ public class Season {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  private Integer seasonNumber;
   private LocalDate releaseDate;
   private Boolean isReleased;
+  private Integer totalEpisodes;
 
   @OneToMany(mappedBy = "season", cascade = CascadeType.ALL, orphanRemoval = true)
-  private Set<Episode> episodes = new HashSet<>(); // Уже был Set, оставляем
+  private Set<Episode> episodes = new HashSet<>();
 
   @ManyToOne
   @JoinColumn(name = "anime_id")

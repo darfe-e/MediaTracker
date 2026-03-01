@@ -12,7 +12,7 @@ public class EpisodeMapper {
       return null;
     }
     return new EpisodeDto(episode.getTitle(), episode.getNumber(),
-        episode.getReleaseDate(), episode.getIsReleased());
+        episode.getReleaseDate());
   }
 
   public static Episode dtoToEpisode(EpisodeDto dto) {
@@ -23,7 +23,6 @@ public class EpisodeMapper {
     episode.setTitle(dto.getTitle());
     episode.setNumber(dto.getNumber());
     episode.setReleaseDate(dto.getReleaseDate());
-    episode.setIsReleased(dto.getIsReleased());
     return episode;
   }
 }
