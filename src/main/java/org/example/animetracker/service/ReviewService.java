@@ -33,50 +33,37 @@ public class ReviewService {
   }
 
   @Transactional
-  public ReviewDto saveReview(ReviewDto reviewDto) {
-    Long userId = reviewDto.getFavorite().getUser().getId();
-    Long animeId = reviewDto.getFavorite().getAnime().getId();
-
-    FavoriteAnime favorite = favoriteAnimeRepository.findByUserIdAndAnimeId(
-        userId, animeId).orElse(null);
-
-    if (favorite == null) {
-      return null;
-    }
-
-    if (reviewRepository.findByFavoriteId(favorite.getId()).isPresent()) {
-      return null;
-    }
-
-    Review review = new Review();
-    review.setAssessment(reviewDto.getAssessment());
-    review.setText(reviewDto.getText());
-    review.setFavorite(favorite);
-
-    reviewRepository.save(review);
-    return ReviewMapper.reviewToDto(review);
-  }
-
-  @Transactional
-  public ReviewDto updateReview(ReviewDto reviewDto) {
-    Long userId = reviewDto.getFavorite().getUser().getId();
-    Long animeId = reviewDto.getFavorite().getAnime().getId();
-
+  public ReviewDto saveReview(Long userId, Long animeId, Float assessment, String text) {
     FavoriteAnime favorite = favoriteAnimeRepository.findByUserIdAndAnimeId(userId, animeId)
         .orElse(null);
     if (favorite == null) {
       return null;
     }
+    if (reviewRepository.findByFavoriteId(favorite.getId()).isPresent()) {
+      return null;
+    }
+    Review review = new Review();
+    review.setAssessment(assessment);
+    review.setText(text);
+    review.setFavorite(favorite);
+    reviewRepository.save(review);
+    return ReviewMapper.reviewToDto(review);
+  }
 
+  @Transactional
+  public ReviewDto updateReview(Long userId, Long animeId, Float assessment, String text) {
+    FavoriteAnime favorite = favoriteAnimeRepository.findByUserIdAndAnimeId(userId, animeId)
+        .orElse(null);
+    if (favorite == null) {
+      return null; // Избранное не найдено
+    }
     Review review = reviewRepository.findByFavoriteId(favorite.getId())
         .orElse(null);
     if (review == null) {
-      return null;
+      return null; // Отзыв не найден
     }
-
-    review.setAssessment(reviewDto.getAssessment());
-    review.setText(reviewDto.getText());
-
+    review.setAssessment(assessment);
+    review.setText(text);
     reviewRepository.save(review);
     return ReviewMapper.reviewToDto(review);
   }

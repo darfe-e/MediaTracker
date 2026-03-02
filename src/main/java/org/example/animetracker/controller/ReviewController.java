@@ -3,7 +3,9 @@ package org.example.animetracker.controller;
 import java.util.List;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
+import org.example.animetracker.dto.ReviewCreateRequest;
 import org.example.animetracker.dto.ReviewDto;
+import org.example.animetracker.dto.ReviewUpdateRequest;
 import org.example.animetracker.service.ReviewService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,19 +43,34 @@ public class ReviewController {
   }
 
   @PostMapping
-  public ResponseEntity<ReviewDto> saveReview(@RequestBody ReviewDto reviewDto) {
-    ReviewDto saved = reviewService.saveReview(reviewDto);
-
-    return saved == null ? ResponseEntity.status(HttpStatus.CONFLICT).build() :
-        ResponseEntity.status(HttpStatus.CREATED).body(saved);
+  public ResponseEntity<ReviewDto> saveReview(
+      @PathVariable Long userId,
+      @RequestBody ReviewCreateRequest request) {
+    ReviewDto saved = reviewService.saveReview(
+        userId,
+        request.getAnimeId(),
+        request.getAssessment(),
+        request.getText()
+    );
+    return saved == null
+        ? ResponseEntity.status(HttpStatus.CONFLICT).build()
+        : ResponseEntity.status(HttpStatus.CREATED).body(saved);
   }
 
-  @PutMapping
-  public ResponseEntity<ReviewDto> updateReview(@RequestBody ReviewDto reviewDto) {
-    ReviewDto update = reviewService.updateReview(reviewDto);
-
-    return update == null ? ResponseEntity.notFound().build() :
-        ResponseEntity.ok(update);
+  @PutMapping("/{animeId}")
+  public ResponseEntity<ReviewDto> updateReview(
+      @PathVariable Long userId,
+      @PathVariable Long animeId,
+      @RequestBody ReviewUpdateRequest request) {  
+    ReviewDto updated = reviewService.updateReview(
+        userId,
+        animeId,
+        request.getAssessment(),
+        request.getText()
+    );
+    return updated == null
+        ? ResponseEntity.notFound().build()
+        : ResponseEntity.ok(updated);
   }
 
   @DeleteMapping ("/{animeId}")
