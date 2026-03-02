@@ -7,6 +7,7 @@ import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.service.AnimeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -80,5 +81,14 @@ public class AnimeController {
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
           .body("Ошибка при добавлении: " + e.getMessage());
     }
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteAnime(@PathVariable Long id) {
+    boolean deleted = animeService.deleteAnime(id);
+    if (!deleted) {
+      return ResponseEntity.notFound().build();
+    }
+    return ResponseEntity.noContent().build();
   }
 }

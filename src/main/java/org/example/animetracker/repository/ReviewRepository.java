@@ -10,7 +10,8 @@ import org.springframework.data.repository.query.Param;
 public interface ReviewRepository extends JpaRepository<Review, Long> {
   Optional<Review> findByFavoriteId(Long favoriteId);
 
-  List<Review> findByFavorite_UserId(Long userId);
+  @Query("SELECT r FROM Review r WHERE r.favorite.user.id = :userId")
+  List<Review> findByUserId(@Param("userId") Long userId);
 
   @Query("SELECT r FROM Review r WHERE r.favorite.user.id = :userId "
       + "AND r.favorite.anime.id = :animeId")

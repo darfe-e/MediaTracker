@@ -27,7 +27,7 @@ public class ReviewService {
 
   @Transactional(readOnly = true)
   public List<ReviewDto> getAllReviewsByUser(Long userId) {
-    return reviewRepository.findByFavorite_UserId(userId).stream()
+    return reviewRepository.findByUserId(userId).stream()
         .map(ReviewMapper::reviewToDto)
         .toList();
   }

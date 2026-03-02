@@ -130,5 +130,14 @@ public class AnimeService {
 
     throw new IllegalStateException("Ошибка после сохранения аниме");
   }
+
+  @Transactional
+  public boolean deleteAnime(Long id) {
+    if (!animeRepository.existsById(id)) {
+      return false;
+    }
+    animeRepository.deleteById(id);
+    return true;
+  }
 }
 
