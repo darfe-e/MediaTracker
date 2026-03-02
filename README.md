@@ -98,21 +98,26 @@ Checkstyle: код приведён к Google Java Style.
 **Каталог аниме**
 - GET /anime-catalogue – список аниме (фильтрация по studio, title)
 - GET /anime-catalogue/{id} – детальная информация об аниме (с сезонами и эпизодами)
-- GET /anime-catalogue/{id}/with-details – оптимизированная загрузка с join fetch (один запрос)
+- GET /anime-catalogue//without-probl/{id} – оптимизированная загрузка с join fetch (один запрос)
 - POST /anime-catalogue – создание нового аниме
-- PUT /anime-catalogue/{id} – обновление данных аниме
 - DELETE /anime-catalogue/{id} – удаление аниме
 
 **Пользователи**
 - POST /users?name=... – регистрация пользователя
 - DELETE /users/{id} – удаление пользователя
 
-**Коллекции пользователей**
-- GET /anime-collection?userId=... – список аниме пользователя (с сортировкой по оценке)
-- GET /anime-collection/{animeId}?userId=... – детальная информация о конкретном аниме в коллекции
-- POST /anime-collection?userId=...&animeId=... – добавить аниме в коллекцию
-- PUT /anime-collection/{animeId}?userId=... – обновить оценку и/или рецензию
-- DELETE /anime-collection/{animeId}?userId=... – удалить аниме из коллекции
+**Избранное пользователей**
+- GET /users/{userId}/favorites – список избранного пользователя
+- GET /users/{userId}/favorites/{animeId} – информация о конкретной записи
+- POST /users/{userId}/favorites/{animeId} – добавить аниме в избранное
+- DELETE /users/{userId}/favorites/{animeId} – удалить из избранного
+
+**Отзывы пользователей**
+- GET /users/{userId}/review/{animeId} – получить отзыв
+- GET /users/{userId}/review – получить все отзывы
+- POST /users/{userId}/review – создать отзыв (тело запроса – ReviewDto)
+- PUT /users/{userId}/review – обновить отзыв (тело запроса – ReviewDto)
+- DELETE /users/{userId}/review/{animeId} – удалить отзыв
 
 ## Проверка в SonarCloud
 
