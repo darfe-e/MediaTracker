@@ -61,7 +61,7 @@ public class ReviewController {
   public ResponseEntity<ReviewDto> updateReview(
       @PathVariable Long userId,
       @PathVariable Long animeId,
-      @RequestBody ReviewUpdateRequest request) {  
+      @RequestBody ReviewUpdateRequest request) {
     ReviewDto updated = reviewService.updateReview(
         userId,
         animeId,

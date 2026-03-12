@@ -1,23 +1,17 @@
 package org.example.animetracker.service;
 
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.animetracker.cache.AnimeSearchCache;
+import org.example.animetracker.cache.AnimeSearchKey;
 import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
-import org.example.animetracker.dto.EpisodeDto;
-import org.example.animetracker.dto.SeasonDto;
 import org.example.animetracker.mapper.AnimeMapper;
-import org.example.animetracker.mapper.EpisodeMapper;
-import org.example.animetracker.mapper.SeasonMapper;
 import org.example.animetracker.model.Anime;
-import org.example.animetracker.model.Episode;
-import org.example.animetracker.model.Season;
 import org.example.animetracker.repository.AnimeRepository;
-import org.example.animetracker.repository.EpisodeRepository;
-import org.example.animetracker.repository.SeasonRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,36 +21,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class AnimeService {
 
   private final AnimeRepository animeRepository;
-  private final SeasonRepository seasonRepository;
-  private final EpisodeRepository episodeRepository;
+  private final AnimeSearchCache searchCache;
 
   @Transactional(readOnly = true)
-  public AnimeDetailedDto findById(Long id) {
-    return animeRepository.findById(id)
+  public AnimeDetailedDto findByIdWithoutProblem(Long id) {
+    return animeRepository.findByIdWithDetails(id)
         .map(AnimeMapper::animeToDetailedDto)
         .map(dto -> {
           dto.setSeasons(dto.getSeasons().stream()
               .filter(s -> !s.getEpisodes().isEmpty())
               .toList());
-          return dto;
-        })
-        .orElse(null);
-  }
-
-  @Transactional(readOnly = true)
-  public AnimeDetailedDto findByIdWithoutProblem(Long id) {
-    return animeRepository.findByIdWithDetails(id)
-        .map(anime -> {
-          AnimeDetailedDto dto = AnimeMapper.animeToDetailedDto(anime);
-
-          if (dto.getSeasons() != null) {
-            List<SeasonDto> sortedSeasons = dto.getSeasons().stream()
-                .sorted((s1, s2) ->
-                    Integer.compare(s2.getEpisodes().size(), s1.getEpisodes().size()))
-                .toList();
-            dto.setSeasons(sortedSeasons);
-          }
-
           return dto;
         })
         .orElse(null);
@@ -82,62 +56,41 @@ public class AnimeService {
     }
   }
 
-  public List<AnimeDto> getAllSortedByPopularity() {
-    return animeRepository.findAll().stream()
-        .sorted(Comparator.comparingInt(Anime::getPopularityRank).reversed())
-        .map(AnimeMapper::animeToDto)
-        .toList();
+  public Page<AnimeDto> getAllSortedByPopularity(Pageable pageable) {
+    return animeRepository.findAllSorted(pageable)
+        .map(AnimeMapper::animeToDto);
   }
 
-  public void createAnimeWithSeasonsWithoutTransaction(AnimeDetailedDto dto) {
-    Anime anime = AnimeMapper.deteiledDtoToAnime(dto);
-    anime.setSeasons(new HashSet<>());
-    anime = animeRepository.save(anime);
+  public Page<AnimeDto> findByGenreAndMinSeasons(String genre, int minSeasons, Pageable pageable) {
+    AnimeSearchKey key = new AnimeSearchKey(genre, minSeasons,
+        pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
 
-    SeasonDto firstSeasonDto = dto.getSeasons().get(0);
-    Season firstSeason = SeasonMapper.dtoToSeason(firstSeasonDto);
-    firstSeason.setAnime(anime);
-    firstSeason = seasonRepository.save(firstSeason);
-
-    for (EpisodeDto episodeDto : firstSeasonDto.getEpisodes()) {
-      Episode episode = EpisodeMapper.dtoToEpisode(episodeDto);
-      episode.setSeason(firstSeason);
-      episodeRepository.save(episode);
+    Page<AnimeDto> cached = searchCache.get(key);
+    if (cached != null) {
+      return cached;
     }
 
-    throw new IllegalStateException("Ошибка после сохранения аниме, первого сезона и его эпизодов");
+    Page<Anime> animePage = animeRepository.findByGenreAndMinSeasons(genre, minSeasons, pageable);
+    Page<AnimeDto> result = animePage.map(AnimeMapper::animeToDto);
+    searchCache.put(key, result);
+    return result;
   }
 
-  @Transactional
-  public void createAnimeWithSeasonsWithTransaction(AnimeDetailedDto dto) {
-    Anime anime = AnimeMapper.deteiledDtoToAnime(dto);
-    anime = animeRepository.save(anime);
+  public Page<AnimeDto> findByGenreAndMinSeasonsNative(String genre,
+                                                       int minSeasons, Pageable pageable) {
+    AnimeSearchKey key = new AnimeSearchKey(genre, minSeasons,
+        pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
 
-    SeasonDto firstSeasonDto = dto.getSeasons().get(0);
-    Season firstSeason = SeasonMapper.dtoToSeason(firstSeasonDto);
-    firstSeason.setAnime(anime);
-    firstSeason = seasonRepository.save(firstSeason);
-
-    for (EpisodeDto episodeDto : firstSeasonDto.getEpisodes()) {
-      Episode episode = EpisodeMapper.dtoToEpisode(episodeDto);
-      episode.setSeason(firstSeason);
-      episodeRepository.save(episode);
+    Page<AnimeDto> cached = searchCache.get(key);
+    if (cached != null) {
+      return cached;
     }
 
-    Season extraSeason = new Season();
-    extraSeason.setAnime(anime);
-    seasonRepository.save(extraSeason);
-
-    throw new IllegalStateException("Ошибка после сохранения аниме");
-  }
-
-  @Transactional
-  public boolean deleteAnime(Long id) {
-    if (!animeRepository.existsById(id)) {
-      return false;
-    }
-    animeRepository.deleteById(id);
-    return true;
+    Page<Anime> animePage = animeRepository
+        .findByGenreAndMinSeasonsNative(genre, minSeasons, pageable);
+    Page<AnimeDto> result = animePage.map(AnimeMapper::animeToDto);
+    searchCache.put(key, result);
+    return result;
   }
 }
 

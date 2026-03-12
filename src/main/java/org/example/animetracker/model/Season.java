@@ -1,6 +1,7 @@
 package org.example.animetracker.model;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -31,6 +32,10 @@ public class Season {
   private LocalDate releaseDate;
   private Boolean isReleased;
   private Integer totalEpisodes;
+  private String format;
+
+  @Column(unique = true)
+  private Long externalId;
 
   @OneToMany(mappedBy = "season", cascade = CascadeType.ALL, orphanRemoval = true)
   private Set<Episode> episodes = new HashSet<>();

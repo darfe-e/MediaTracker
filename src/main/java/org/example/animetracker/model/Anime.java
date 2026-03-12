@@ -1,6 +1,7 @@
 package org.example.animetracker.model;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,6 +11,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -30,6 +32,11 @@ public class Anime {
   private String title;
   private Integer numOfReleasedSeasons;
   private String studio;
+  private LocalDateTime lastUpdated;
+  private Integer duration;
+
+  @Column(unique = true)
+  private Long externalId;
 
   @OneToMany(mappedBy = "anime", cascade = CascadeType.ALL)
   private Set<Season> seasons = new HashSet<>();

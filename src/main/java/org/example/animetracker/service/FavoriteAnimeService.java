@@ -1,8 +1,10 @@
 package org.example.animetracker.service;
 
-import java.util.List;
 import lombok.AllArgsConstructor;
+import org.example.animetracker.dto.AnimeDetailedDto;
+import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.dto.FavoriteAnimeDto;
+import org.example.animetracker.mapper.AnimeMapper;
 import org.example.animetracker.mapper.FavoriteAnimeMapper;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.model.FavoriteAnime;
@@ -10,6 +12,8 @@ import org.example.animetracker.model.User;
 import org.example.animetracker.repository.AnimeRepository;
 import org.example.animetracker.repository.FavoriteAnimeRepository;
 import org.example.animetracker.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @AllArgsConstructor
@@ -20,19 +24,25 @@ public class FavoriteAnimeService {
   private final AnimeRepository animeRepository;
   private final UserRepository userRepository;
 
-  public List<FavoriteAnimeDto> getByUserIdSortedByAssessment(Long userId) {
-    return favoriteAnimeRepository.findByUserId(userId).stream()
-        .map(FavoriteAnimeMapper::favoriteAnimeToDto)
-        .toList();
+  public Page<AnimeDto> getByUserIdSortedByAssessment(Long userId, Pageable pageable) {
+    return favoriteAnimeRepository.findAnimeByUserIdSortedByAssessment(userId, pageable)
+        .map(AnimeMapper::animeToDto);
   }
 
-  public FavoriteAnimeDto getConnection(Long userId, Long animeId) {
+  public AnimeDetailedDto getConnection(Long userId, Long animeId) {
     FavoriteAnime favorite = favoriteAnimeRepository.findByUserIdAndAnimeId(userId, animeId)
         .orElse(null);
     if (favorite == null) {
       return null;
     }
-    return FavoriteAnimeMapper.favoriteAnimeToDto(favorite);
+    Anime anime = animeRepository.findById(animeId).orElse(null);
+    return AnimeMapper.animeToDetailedDto(anime);
+  }
+
+  public Page<AnimeDto> getOngoingInCollection(Long userId, Pageable pageable) {
+    Page<Anime> animes = favoriteAnimeRepository
+        .getOngoingSortedByAssessment(userId, pageable);
+    return animes.map(AnimeMapper::animeToDto);
   }
 
   public FavoriteAnimeDto addAnimeToCollection(Long animeId, Long userId) {

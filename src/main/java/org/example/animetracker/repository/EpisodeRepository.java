@@ -1,9 +1,16 @@
 package org.example.animetracker.repository;
 
+import jakarta.transaction.Transactional;
 import org.example.animetracker.model.Episode;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface EpisodeRepository extends JpaRepository<Episode, Long> {
 
-
+  @Modifying
+  @Transactional
+  @Query("DELETE FROM Episode e WHERE e.season.id = :seasonId")
+  void deleteAllBySeasonId(@Param("seasonId") Long seasonId);
 }

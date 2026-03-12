@@ -55,12 +55,12 @@ public class ReviewService {
     FavoriteAnime favorite = favoriteAnimeRepository.findByUserIdAndAnimeId(userId, animeId)
         .orElse(null);
     if (favorite == null) {
-      return null; // Избранное не найдено
+      return null;
     }
     Review review = reviewRepository.findByFavoriteId(favorite.getId())
         .orElse(null);
     if (review == null) {
-      return null; // Отзыв не найден
+      return null;
     }
     review.setAssessment(assessment);
     review.setText(text);
