@@ -10,6 +10,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 @Entity
 @Table(name = "reviews")
@@ -25,6 +26,9 @@ public class Review {
   @JoinColumn(name = "favorite_id", nullable = false, unique = true)
   private FavoriteAnime favorite;
 
+  @NonNull
   private Float assessment;
+
+  @NonNull
   private String text;
 }

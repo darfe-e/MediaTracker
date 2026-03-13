@@ -12,8 +12,10 @@ import org.example.animetracker.model.Anime;
 import org.example.animetracker.repository.AnimeRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @AllArgsConstructor
@@ -33,26 +35,39 @@ public class AnimeService {
               .toList());
           return dto;
         })
-        .orElse(null);
+        .orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.NOT_FOUND, "Anime not found with id: " + id));
   }
 
   public List<AnimeDto> findByStudioAndName(String studio, String title) {
     if (studio != null && title != null) {
-      return animeRepository.findByStudioAndTitle(studio, title).stream()
-          .map(AnimeMapper::animeToDto)
-          .toList();
+      List<Anime> list = animeRepository.findByStudioAndTitle(studio, title);
+      if (list.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+            "Anime not found with studio: " + studio + " and title: " + title);
+      }
+      return list.stream().map(AnimeMapper::animeToDto).toList();
     } else if (studio != null) {
-      return animeRepository.findByStudio(studio).stream()
-          .map(AnimeMapper::animeToDto)
-          .toList();
+      List<Anime> list = animeRepository.findByStudio(studio);
+      if (list.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+            "Anime not found with studio: " + studio);
+      }
+      return list.stream().map(AnimeMapper::animeToDto).toList();
     } else if (title != null) {
-      return animeRepository.findByTitle(title).stream()
-          .map(AnimeMapper::animeToDto)
-          .toList();
+      List<Anime> list = animeRepository.findByTitle(title);
+      if (list.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+            "Anime not found with title: " + title);
+      }
+      return list.stream().map(AnimeMapper::animeToDto).toList();
     } else {
-      return animeRepository.findAll().stream()
-          .map(AnimeMapper::animeToDto)
-          .toList();
+      List<Anime> list = animeRepository.findAll();
+      if (list.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+            "No anime found in catalogue");
+      }
+      return list.stream().map(AnimeMapper::animeToDto).toList();
     }
   }
 
@@ -67,8 +82,10 @@ public class AnimeService {
 
     Page<AnimeDto> cached = searchCache.get(key);
     if (cached != null) {
+      log.debug("Cache hit for key: {}", key);
       return cached;
     }
+    log.debug("Cache miss for key: {}", key);
 
     Page<Anime> animePage = animeRepository.findByGenreAndMinSeasons(genre, minSeasons, pageable);
     Page<AnimeDto> result = animePage.map(AnimeMapper::animeToDto);
@@ -83,8 +100,10 @@ public class AnimeService {
 
     Page<AnimeDto> cached = searchCache.get(key);
     if (cached != null) {
+      log.debug("Cache hit for key: {}", key);
       return cached;
     }
+    log.debug("Cache miss for key: {}", key);
 
     Page<Anime> animePage = animeRepository
         .findByGenreAndMinSeasonsNative(genre, minSeasons, pageable);
@@ -93,4 +112,3 @@ public class AnimeService {
     return result;
   }
 }
-

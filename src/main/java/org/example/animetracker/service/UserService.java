@@ -5,7 +5,9 @@ import org.example.animetracker.dto.UserDto;
 import org.example.animetracker.mapper.UserMapper;
 import org.example.animetracker.model.User;
 import org.example.animetracker.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @AllArgsConstructor
 @Service
@@ -20,11 +22,11 @@ public class UserService {
     return UserMapper.userToDto(saved);
   }
 
-  public boolean deleteUser(Long id) {
+  public void deleteUser(Long id) {
     if (!userRepository.existsById(id)) {
-      return false;
+      throw new ResponseStatusException(
+          HttpStatus.NOT_FOUND, "user is not found by id: " + id);
     }
     userRepository.deleteById(id);
-    return true;
   }
 }

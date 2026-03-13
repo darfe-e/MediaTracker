@@ -251,7 +251,7 @@ public class AnimeImportService {
     }
 
     searchCache.invalidateAll();
-    log.info("✓ '{}' | TV: {} | Онгоинг: {}", anime.getTitle(), tvCount, isOngoing);
+    log.info("ok '{}' | TV: {} | Онгоинг: {}", anime.getTitle(), tvCount, isOngoing);
     return anime;
   }
 

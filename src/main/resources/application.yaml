@@ -16,3 +16,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+  logging:
+    level:
+      root: INFO
+      org.example.animetracker: DEBUG
+      org.springframework.web: WARN
+      org.hibernate: ERROR

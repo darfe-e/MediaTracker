@@ -29,9 +29,6 @@ public class AnimeController {
   @GetMapping("/{id}")
   public ResponseEntity<AnimeDetailedDto> getById(@PathVariable Long id) {
     AnimeDetailedDto dto = animeService.findByIdWithoutProblem(id);
-    if (dto == null) {
-      return ResponseEntity.notFound().build();
-    }
     return ResponseEntity.ok(dto);
   }
 
@@ -40,9 +37,6 @@ public class AnimeController {
       @RequestParam(required = false) String studio,
       @RequestParam(required = false) String title) {
     List<AnimeDto> result = animeService.findByStudioAndName(studio, title);
-    if (result.isEmpty()) {
-      return ResponseEntity.notFound().build();
-    }
     return ResponseEntity.ok(result);
   }
 
@@ -52,9 +46,6 @@ public class AnimeController {
       @RequestParam(defaultValue = "10") int size) {
     Pageable pageable = PageRequest.of(page, size);
     Page<AnimeDto> result = animeService.getAllSortedByPopularity(pageable);
-    if (result.isEmpty()) {
-      return ResponseEntity.notFound().build();
-    }
     return ResponseEntity.ok(result);
   }
 
@@ -82,7 +73,7 @@ public class AnimeController {
       @RequestParam int minSeasons,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size) {
-    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("popularityRank")));
+    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("popularity_rank")));
     Page<AnimeDto> result = animeService
         .findByGenreAndMinSeasonsNative(genre, minSeasons, pageable);
     return ResponseEntity.ok(result);
