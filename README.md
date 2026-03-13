@@ -97,8 +97,6 @@ Anime Tracker — это клиент-серверное веб-приложен
 
 4. После запуска API будет доступен по адресу:
    > http://localhost:8080
-   > Документация Swagger: http://localhost:8080/swagger-ui/index.html
-   > OpenAPI спецификация: http://localhost:8080/v3/api-docs
 
 5. Остановка приложения — Ctrl+C в терминале с запущенным Spring Boot.
 
@@ -143,3 +141,13 @@ Anime Tracker — это клиент-серверное веб-приложен
 ## Проверка в SonarCloud
 
  >https://sonarcloud.io/project/configuration/AutoScan?id=darfe-e_MediaTracker
+
+**При запуске сервера:**
+
+## Документация Swagger
+
+   >http://localhost:8080/swagger-ui/index.html
+
+## OpenAPI спецификация
+
+   >http://localhost:8080/v3/api-docs
