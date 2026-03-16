@@ -18,7 +18,7 @@ public class AnimeSearchCache {
   }
 
   public Page<AnimeDto> get(AnimeSearchKey key) {
-    log.info("The value was gotten from cache");
+    log.info("The value was gotten from the cache");
     return cache.get(key);
   }
 
