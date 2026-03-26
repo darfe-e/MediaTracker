@@ -19,10 +19,12 @@ public class GeneralExceptionHandler {
   public ResponseEntity<ErrorResponseDto> handleResponseStatusException(
       ResponseStatusException ex, WebRequest request) {
     String path = request.getDescription(false).replace("uri=", "");
+    String error = ex.getReason() != null ? ex.getReason()
+        : HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase();
     ErrorResponseDto errorResponse = new ErrorResponseDto(
         LocalDateTime.now(),
         ex.getStatusCode().value(),
-        "Wrong data",
+        error,
         ex.getMessage(),
         path
     );
@@ -41,6 +43,20 @@ public class GeneralExceptionHandler {
         path
     );
     return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+  }
+
+  @ExceptionHandler(RuntimeException.class)
+  public ResponseEntity<ErrorResponseDto> handleRuntimeException(
+      RuntimeException ex, WebRequest request) {
+    String path = request.getDescription(false).replace("uri=", "");
+    ErrorResponseDto errorResponse = new ErrorResponseDto(
+        LocalDateTime.now(),
+        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+        "Internal Server Error",
+        ex.getMessage(),
+        path
+    );
+    return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

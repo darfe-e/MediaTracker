@@ -1,6 +1,7 @@
 package org.example.animetracker.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.example.animetracker.controller.api.FavoriteAnimeControllerApi;
 import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.dto.FavoriteAnimeDto;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/users/{userId}/favorites")
 @RequiredArgsConstructor
-public class FavoriteAnimeController {
+public class FavoriteAnimeController implements FavoriteAnimeControllerApi {
 
   private final FavoriteAnimeService favoriteAnimeService;
 

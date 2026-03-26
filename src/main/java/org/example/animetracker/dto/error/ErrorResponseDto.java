@@ -9,7 +9,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class ErrorResponseDto {
 
-  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd', time: 'HH:mm:ss")
   private LocalDateTime timestamp;
   private int status;
   private String error;

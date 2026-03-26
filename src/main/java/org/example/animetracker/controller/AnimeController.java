@@ -2,6 +2,7 @@ package org.example.animetracker.controller;
 
 import java.util.List;
 import lombok.AllArgsConstructor;
+import org.example.animetracker.controller.api.AnimeControllerApi;
 import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.mapper.AnimeMapper;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 @RestController
 @RequestMapping("/anime-catalogue")
-public class AnimeController {
+public class AnimeController implements AnimeControllerApi {
 
   private final AnimeService animeService;
   private final AnimeImportService animeImportService;

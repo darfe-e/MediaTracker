@@ -3,6 +3,7 @@ package org.example.animetracker.controller;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import org.example.animetracker.controller.api.ReviewControllerApi;
 import org.example.animetracker.dto.ReviewCreateRequest;
 import org.example.animetracker.dto.ReviewDto;
 import org.example.animetracker.dto.ReviewUpdateRequest;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 @RestController
 @RequestMapping("/users/{userId}/review")
-public class ReviewController {
+public class ReviewController implements ReviewControllerApi {
 
   private final ReviewService reviewService;
 

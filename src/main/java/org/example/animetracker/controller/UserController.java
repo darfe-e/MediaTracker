@@ -1,6 +1,7 @@
 package org.example.animetracker.controller;
 
 import lombok.AllArgsConstructor;
+import org.example.animetracker.controller.api.UserControllerApi;
 import org.example.animetracker.dto.UserDto;
 import org.example.animetracker.service.UserService;
 import org.springframework.http.HttpStatus;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor
 @RestController
 @RequestMapping("/users")
-public class UserController {
+public class UserController implements UserControllerApi {
 
   private final UserService userService;
 
