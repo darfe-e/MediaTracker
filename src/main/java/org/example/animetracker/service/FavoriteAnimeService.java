@@ -40,11 +40,8 @@ public class FavoriteAnimeService {
   public AnimeDetailedDto getConnection(Long userId, Long animeId) {
     log.debug("Checking favorite connection for user {} and anime {}", userId, animeId);
     FavoriteAnime favorite = favoriteAnimeRepository.findByUserIdAndAnimeId(userId, animeId)
-        .orElseThrow(() -> {
-          log.error("Favorite not found for user {} and anime {}", userId, animeId);
-          return new ResponseStatusException(HttpStatus.NOT_FOUND,
-              "Favorite not found for user " + userId + " and anime " + animeId);
-        });
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+            "Favorite not found for user " + userId + " and anime " + animeId));
     Anime anime = favorite.getAnime();
     log.debug("Found favorite connection for user {} and anime {}", userId, animeId);
     return AnimeMapper.animeToDetailedDto(anime);
@@ -74,7 +71,6 @@ public class FavoriteAnimeService {
         });
 
     if (favoriteAnimeRepository.findByUserIdAndAnimeId(userId, animeId).isPresent()) {
-      log.warn("Conflict: anime {} already in collection of user {}", animeId, userId);
       throw new ResponseStatusException(HttpStatus.CONFLICT,
           "Anime already in collection for user " + userId);
     }
