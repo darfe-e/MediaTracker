@@ -17,8 +17,14 @@ import org.springframework.web.client.RestTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-// Используем RANDOM_PORT, чтобы не было конфликтов по портам
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
+    "spring.datasource.driver-class-name=org.h2.Driver",
+    "spring.datasource.username=sa",
+    "spring.datasource.password=",
+    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+    "spring.sql.init.mode=never"
+})
 class AnimeTrackerApplicationTest {
 
   @Autowired
@@ -32,8 +38,6 @@ class AnimeTrackerApplicationTest {
 
   @BeforeEach
   void resetMocks() {
-    // Сбрасываем моки перед каждым тестом,
-    // так как CommandLineRunner уже мог дернуть их при старте контекста
     Mockito.reset(animeRepository, importService);
   }
 
@@ -72,8 +76,14 @@ class AnimeTrackerApplicationTest {
   @Test
   @DisplayName("main — проверка запуска приложения")
   void mainMethodTest() {
-    // Чтобы main не пытался занять порт 8080, запускаем его без веб-сервера
-    AnimeTrackerApplication.main(new String[]{"--spring.main.web-application-type=none"});
+    // Передаем все необходимые параметры, чтобы Hibernate в методе main
+    // инициализировался с H2 диалектом и не искал Postgres
+    AnimeTrackerApplication.main(new String[]{
+        "--spring.main.web-application-type=none",
+        "--spring.datasource.url=jdbc:h2:mem:main_testdb;DB_CLOSE_DELAY=-1",
+        "--spring.datasource.driver-class-name=org.h2.Driver",
+        "--spring.jpa.database-platform=org.hibernate.dialect.H2Dialect"
+    });
 
     assertThat(context.getBean(AnimeTrackerApplication.class)).isNotNull();
   }
