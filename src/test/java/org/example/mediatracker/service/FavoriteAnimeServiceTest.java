@@ -167,6 +167,7 @@ class FavoriteAnimeServiceTest {
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("Favorite not found for user 1");
   }
+  
 
   @Test
   @DisplayName("addMultipleAnimesToCollectionBulk — успех")
