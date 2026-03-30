@@ -193,7 +193,6 @@
         <module name="OneStatementPerLine"/>
         <module name="MultipleVariableDeclarations"/>
         <module name="ArrayTypeStyle"/>
-        <module name="JavadocLeadingAsteriskAlign"/>
         <module name="JavadocMissingLeadingAsterisk"/>
         <module name="JavadocContentLocation"/>
         <module name="MissingSwitchDefault"/>
