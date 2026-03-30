@@ -1,4 +1,4 @@
-package org.example.mediatracker.service;
+package org.example.animetracker.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 import org.example.animetracker.dto.UserDto;
 import org.example.animetracker.model.User;
 import org.example.animetracker.repository.UserRepository;
-import org.example.animetracker.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

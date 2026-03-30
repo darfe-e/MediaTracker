@@ -1,4 +1,4 @@
-package org.example.mediatracker.service;
+package org.example.animetracker.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -14,7 +14,6 @@ import org.example.animetracker.repository.AnimeRepository;
 import org.example.animetracker.repository.EpisodeRepository;
 import org.example.animetracker.repository.GenreRepository;
 import org.example.animetracker.repository.SeasonRepository;
-import org.example.animetracker.service.AnimeImportService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

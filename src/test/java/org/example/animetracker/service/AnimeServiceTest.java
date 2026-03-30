@@ -1,4 +1,4 @@
-package org.example.mediatracker.service;
+package org.example.animetracker.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,7 +24,6 @@ import org.example.animetracker.dto.SeasonDto;
 import org.example.animetracker.mapper.AnimeMapper;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.repository.AnimeRepository;
-import org.example.animetracker.service.AnimeService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
