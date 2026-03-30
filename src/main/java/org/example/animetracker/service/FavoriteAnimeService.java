@@ -1,5 +1,8 @@
 package org.example.animetracker.service;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.animetracker.dto.AnimeDetailedDto;
@@ -30,15 +33,12 @@ public class FavoriteAnimeService {
   private final UserRepository userRepository;
 
   public Page<AnimeDto> getByUserIdSortedByAssessment(Long userId, Pageable pageable) {
-    log.info("Getting favorite anime for user {} sorted by assessment, pageable: {}",
-        userId, pageable);
     return favoriteAnimeRepository.findAnimeByUserIdSortedByAssessment(userId, pageable)
         .map(AnimeMapper::animeToDto);
   }
 
   @Transactional(readOnly = true)
   public AnimeDetailedDto getConnection(Long userId, Long animeId) {
-    log.debug("Checking favorite connection for user {} and anime {}", userId, animeId);
     FavoriteAnime favorite = favoriteAnimeRepository.findByUserIdAndAnimeId(userId, animeId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
             "Favorite not found for user " + userId + " and anime " + animeId));
@@ -48,7 +48,6 @@ public class FavoriteAnimeService {
   }
 
   public Page<AnimeDto> getOngoingInCollection(Long userId, Pageable pageable) {
-    log.info("Getting ongoing anime for user {} with pageable: {}", userId, pageable);
     Page<Anime> animes = favoriteAnimeRepository
         .getOngoingSortedByAssessment(userId, pageable);
     return animes.map(AnimeMapper::animeToDto);
@@ -56,7 +55,6 @@ public class FavoriteAnimeService {
 
   @Transactional
   public FavoriteAnimeDto addAnimeToCollection(Long animeId, Long userId) {
-    log.info("Adding anime {} to collection of user {}", animeId, userId);
     Anime anime = animeRepository.findById(animeId)
         .orElseThrow(() -> {
           log.error("Anime not found with id: {}", animeId);
@@ -83,7 +81,6 @@ public class FavoriteAnimeService {
   }
 
   public void removeConnection(Long userId, Long animeId) {
-    log.info("Removing anime {} from collection of user {}", animeId, userId);
     FavoriteAnime favorite = favoriteAnimeRepository.findByUserIdAndAnimeId(userId, animeId)
         .orElseThrow(() -> {
           log.error("Favorite not found for user {} and anime {}", userId, animeId);
@@ -93,4 +90,61 @@ public class FavoriteAnimeService {
     favoriteAnimeRepository.delete(favorite);
     log.info("Successfully removed anime {} from collection of user {}", animeId, userId);
   }
+
+  @Transactional
+  public List<FavoriteAnimeDto> addMultipleAnimesToCollectionBulk(
+      Long userId, List<Long> animeIds) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() ->  new ResponseStatusException(HttpStatus.NOT_FOUND,
+              "User not found with id: " + userId)
+        );
+
+    List<FavoriteAnime> favoritesToSave = Optional.ofNullable(animeIds)
+        .orElse(Collections.emptyList())
+        .stream()
+        .distinct()
+        .map(animeId -> {
+          Anime anime = animeRepository.findById(animeId)
+              .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Anime not found with id: " + animeId)
+              );
+
+          if (favoriteAnimeRepository.findByUserIdAndAnimeId(userId, animeId).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Anime with id " + animeId + " already in collection for user " + userId);
+          }
+
+          return new FavoriteAnime(user, anime);
+        })
+        .toList();
+
+    List<FavoriteAnime> savedFavorites = favoriteAnimeRepository.saveAll(favoritesToSave);
+
+    return savedFavorites.stream()
+        .map(FavoriteAnimeMapper::favoriteAnimeToDto)
+        .toList();
+  }
+
+  public List<FavoriteAnimeDto> addBulkNonTransactional(Long userId, List<Long> animeIds) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+    return Optional.ofNullable(animeIds)
+        .orElse(Collections.emptyList())
+        .stream()
+        .map(animeId -> {
+          Anime anime = animeRepository.findById(animeId)
+              .orElseThrow(() ->
+                  new ResponseStatusException(HttpStatus.NOT_FOUND, "Anime not found: " + animeId));
+
+          if (favoriteAnimeRepository.findByUserIdAndAnimeId(userId, animeId).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Дубликат!");
+          }
+
+          FavoriteAnime saved = favoriteAnimeRepository.save(new FavoriteAnime(user, anime));
+          return FavoriteAnimeMapper.favoriteAnimeToDto(saved);
+        })
+        .toList();
+  }
+
 }
