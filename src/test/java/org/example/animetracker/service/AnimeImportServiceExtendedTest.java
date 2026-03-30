@@ -29,6 +29,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+/**
+ * Расширенные тесты AnimeImportService. Класс находится в том же пакете,
+ * что и сервис, для доступа к protected-методу saveFranchise.
+ */
 @ExtendWith(MockitoExtension.class)
 class AnimeImportServiceExtendedTest {
 
@@ -43,8 +47,13 @@ class AnimeImportServiceExtendedTest {
   private ObjectMapper objectMapper;
   private AnimeImportService service;
 
-  // ─── общий JSON для AnilistMedia ─────────────────────────────────────────
-  private static final String FINISHED_TV_MEDIA_JSON = """
+  // ─── JSON-константы ──────────────────────────────────────────────────────
+
+  /**
+   * episodes=0 → hasEpisodes() == false → registerNode НЕ добавит медиа в allMedia.
+   * Используется только в тестах, вызывающих saveFranchise() напрямую.
+   */
+  private static final String FINISHED_TV_NO_EPS_JSON = """
       {
         "data": {
           "Media": {
@@ -66,7 +75,34 @@ class AnimeImportServiceExtendedTest {
       }
       """;
 
-  private static final String RELEASING_MEDIA_WITH_SCHEDULE_JSON = """
+  /**
+   * episodes=12 → hasEpisodes() == true → registerNode добавит медиа в allMedia.
+   * Используется в тестах, вызывающих importFromApi() / refreshPopularAnime().
+   */
+  private static final String FINISHED_TV_WITH_EPS_JSON = """
+      {
+        "data": {
+          "Media": {
+            "id": 101,
+            "idMal": null,
+            "popularity": 500,
+            "title": {"romaji": "Test Anime", "english": "Test Anime EN"},
+            "format": "TV",
+            "status": "FINISHED",
+            "episodes": 12,
+            "duration": 24,
+            "startDate": {"year": 2020, "month": 4, "day": 1},
+            "studios": {"edges": [{"node": {"name": "Test Studio"}}]},
+            "genres": ["Action"],
+            "airingSchedule": {"nodes": []},
+            "relations": {"edges": []}
+          }
+        }
+      }
+      """;
+
+  /** RELEASING + airingSchedule → resolveEpisodeCount использует maxEpisodeFromSchedule. */
+  private static final String RELEASING_WITH_SCHEDULE_JSON = """
       {
         "data": {
           "Media": {
@@ -91,7 +127,8 @@ class AnimeImportServiceExtendedTest {
       }
       """;
 
-  private static final String UNKNOWN_FORMAT_MEDIA_JSON = """
+  /** Формат MUSIC — не проходит isAcceptableFormat(), allMedia остаётся пустым. */
+  private static final String MUSIC_FORMAT_JSON = """
       {
         "data": {
           "Media": {
@@ -113,7 +150,31 @@ class AnimeImportServiceExtendedTest {
       }
       """;
 
-  private static final String PAGE_WITH_ONE_ITEM_JSON = """
+  /** episodes=12, idMal=123 — для тестов Jikan. */
+  private static final String TV_WITH_MAL_ID_JSON = """
+      {
+        "data": {
+          "Media": {
+            "id": 404,
+            "idMal": 123,
+            "popularity": 300,
+            "title": {"romaji": "Test With Mal", "english": "Test With Mal EN"},
+            "format": "TV",
+            "status": "FINISHED",
+            "episodes": 2,
+            "duration": 24,
+            "startDate": {"year": 2021, "month": 6, "day": 15},
+            "studios": {"edges": []},
+            "genres": [],
+            "airingSchedule": {"nodes": []},
+            "relations": {"edges": []}
+          }
+        }
+      }
+      """;
+
+  /** Page с одним элементом (episodes=12) для refreshPopularAnime. */
+  private static final String PAGE_ONE_ITEM_JSON = """
       {
         "data": {
           "Page": {
@@ -124,7 +185,7 @@ class AnimeImportServiceExtendedTest {
               "title": {"romaji": "Test Anime", "english": "Test Anime EN"},
               "format": "TV",
               "status": "FINISHED",
-              "episodes": 0,
+              "episodes": 12,
               "duration": 24,
               "startDate": {"year": 2020, "month": 4, "day": 1},
               "studios": {"edges": [{"node": {"name": "Test Studio"}}]},
@@ -152,17 +213,10 @@ class AnimeImportServiceExtendedTest {
   @Test
   @DisplayName("saveFranchise — новое аниме, episodes=0 → сохраняется без эпизодов")
   void saveFranchise_newAnime_noEpisodes_savedSuccessfully() throws Exception {
-    var media = objectMapper.readTree(FINISHED_TV_MEDIA_JSON)
-        .path("data").path("Media");
-    var anilistMedia = objectMapper.treeToValue(
-        media, org.example.animetracker.dto.external.AnilistMedia.class);
+    var anilistMedia = parseMedia(FINISHED_TV_NO_EPS_JSON);
 
-    Anime savedAnime = new Anime();
-    savedAnime.setId(1L);
-    savedAnime.setTitle("Test Anime EN");
-
-    Season savedSeason = new Season();
-    savedSeason.setId(10L);
+    Anime savedAnime = buildSavedAnime(1L, "Test Anime EN");
+    Season savedSeason = buildSavedSeason(10L);
 
     when(animeRepository.findByExternalId(101L)).thenReturn(Optional.empty());
     when(genreRepository.findAll()).thenReturn(List.of());
@@ -184,17 +238,10 @@ class AnimeImportServiceExtendedTest {
   @Test
   @DisplayName("saveFranchise — существующее аниме → обновляется через findByExternalId")
   void saveFranchise_existingAnime_updatesExisting() throws Exception {
-    var media = objectMapper.readTree(FINISHED_TV_MEDIA_JSON)
-        .path("data").path("Media");
-    var anilistMedia = objectMapper.treeToValue(
-        media, org.example.animetracker.dto.external.AnilistMedia.class);
+    var anilistMedia = parseMedia(FINISHED_TV_NO_EPS_JSON);
 
-    Anime existing = new Anime();
-    existing.setId(99L);
-    existing.setTitle("Old Title");
-
-    Season savedSeason = new Season();
-    savedSeason.setId(5L);
+    Anime existing = buildSavedAnime(99L, "Old Title");
+    Season savedSeason = buildSavedSeason(5L);
 
     when(animeRepository.findByExternalId(101L)).thenReturn(Optional.of(existing));
     when(genreRepository.findAll()).thenReturn(List.of());
@@ -210,24 +257,20 @@ class AnimeImportServiceExtendedTest {
   }
 
   @Test
-  @DisplayName("saveFranchise — формат не TV, нет TV-медиа → берёт первый элемент")
+  @DisplayName("saveFranchise — нет TV-медиа → берёт первый элемент (MUSIC)")
   void saveFranchise_noTvFormat_takesFirstElement() throws Exception {
-    var mediaNode = objectMapper.readTree(UNKNOWN_FORMAT_MEDIA_JSON)
-        .path("data").path("Media");
-    var anilistMedia = objectMapper.treeToValue(
-        mediaNode, org.example.animetracker.dto.external.AnilistMedia.class);
+    var anilistMedia = parseMedia(MUSIC_FORMAT_JSON);
 
-    Anime savedAnime = new Anime();
-    savedAnime.setId(1L);
-
-    Season savedSeason = new Season();
-    savedSeason.setId(1L);
+    Anime savedAnime = buildSavedAnime(1L, "Music Video");
+    Season savedSeason = buildSavedSeason(1L);
 
     when(animeRepository.findByExternalId(303L)).thenReturn(Optional.empty());
     when(genreRepository.findAll()).thenReturn(List.of());
     when(animeRepository.save(any())).thenReturn(savedAnime);
     when(seasonRepository.findByExternalId(303L)).thenReturn(Optional.empty());
     when(seasonRepository.save(any())).thenReturn(savedSeason);
+    // episodes=1 → saveAll вызывается
+    when(episodeRepository.saveAll(any())).thenReturn(List.of());
 
     Anime result = service.saveFranchise(List.of(anilistMedia), 0, false);
 
@@ -235,20 +278,14 @@ class AnimeImportServiceExtendedTest {
   }
 
   @Test
-  @DisplayName("saveFranchise — RELEASING с расписанием → resolveEpisodeCount через airingSchedule")
-  void saveFranchise_releasingWithSchedule_resolvesEpisodeCount() throws Exception {
-    var mediaNode = objectMapper.readTree(RELEASING_MEDIA_WITH_SCHEDULE_JSON)
-        .path("data").path("Media");
-    var anilistMedia = objectMapper.treeToValue(
-        mediaNode, org.example.animetracker.dto.external.AnilistMedia.class);
+  @DisplayName("saveFranchise — RELEASING + airingSchedule → resolveEpisodeCount использует schedule")
+  void saveFranchise_releasingWithSchedule_resolvesEpisodeCountFromSchedule() throws Exception {
+    var anilistMedia = parseMedia(RELEASING_WITH_SCHEDULE_JSON);
 
-    Anime savedAnime = new Anime();
-    savedAnime.setId(2L);
+    Anime savedAnime = buildSavedAnime(2L, "Ongoing Anime");
+    Season savedSeason = buildSavedSeason(20L);
 
-    Season savedSeason = new Season();
-    savedSeason.setId(20L);
-
-    // idMal=null → fetchJikanEpisodeTitles возвращает empty map без HTTP-вызовов
+    // idMal=null → Jikan не вызывается
     when(animeRepository.findByExternalId(202L)).thenReturn(Optional.empty());
     when(genreRepository.findAll()).thenReturn(List.of());
     when(animeRepository.save(any())).thenReturn(savedAnime);
@@ -259,56 +296,43 @@ class AnimeImportServiceExtendedTest {
     Anime result = service.saveFranchise(List.of(anilistMedia), 1, true);
 
     assertThat(result).isNotNull();
-    // totalEps = maxEpisodeFromSchedule = 6 → эпизоды сохраняются
+    // totalEps = maxEpisodeFromSchedule = 6 → saveAll вызывается
     verify(episodeRepository).saveAll(any());
-    // buildAirDateMap тоже покрыт (2 узла с airingAt)
   }
 
   @Test
-  @DisplayName("saveFranchise — сезон уже существует в БД → обновляется")
+  @DisplayName("saveFranchise — сезон уже есть в БД → обновляется, а не создаётся")
   void saveFranchise_existingSeason_updates() throws Exception {
-    var mediaNode = objectMapper.readTree(FINISHED_TV_MEDIA_JSON)
-        .path("data").path("Media");
-    var anilistMedia = objectMapper.treeToValue(
-        mediaNode, org.example.animetracker.dto.external.AnilistMedia.class);
+    var anilistMedia = parseMedia(FINISHED_TV_NO_EPS_JSON);
 
-    Anime savedAnime = new Anime();
-    savedAnime.setId(1L);
-
-    Season existingSeason = new Season();
-    existingSeason.setId(77L);
-    existingSeason.setExternalId(101L);
+    Anime savedAnime = buildSavedAnime(1L, "Test Anime EN");
+    Season existing = buildSavedSeason(77L);
+    existing.setExternalId(101L);
 
     when(animeRepository.findByExternalId(101L)).thenReturn(Optional.empty());
     when(genreRepository.findAll()).thenReturn(List.of());
     when(genreRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
     when(animeRepository.save(any())).thenReturn(savedAnime);
-    when(seasonRepository.findByExternalId(101L)).thenReturn(Optional.of(existingSeason));
-    when(seasonRepository.save(any())).thenReturn(existingSeason);
+    when(seasonRepository.findByExternalId(101L)).thenReturn(Optional.of(existing));
+    when(seasonRepository.save(any())).thenReturn(existing);
 
     Anime result = service.saveFranchise(List.of(anilistMedia), 1, false);
 
     assertThat(result).isNotNull();
-    verify(seasonRepository).save(existingSeason);
+    verify(seasonRepository).save(existing);
   }
 
   @Test
-  @DisplayName("saveFranchise — жанры сохраняются через genreRepository.save")
-  void saveFranchise_withNewGenres_savesGenresToRepository() throws Exception {
-    var mediaNode = objectMapper.readTree(FINISHED_TV_MEDIA_JSON)
-        .path("data").path("Media");
-    var anilistMedia = objectMapper.treeToValue(
-        mediaNode, org.example.animetracker.dto.external.AnilistMedia.class);
-    // Медиа содержит жанры ["Action", "Adventure"], genreCache пуст →
-    // оба жанра сохранятся через genreRepository.save
+  @DisplayName("saveFranchise — новые жанры сохраняются через genreRepository.save")
+  void saveFranchise_newGenres_savedViaRepository() throws Exception {
+    // FINISHED_TV_NO_EPS_JSON содержит genres: ["Action","Adventure"]
+    var anilistMedia = parseMedia(FINISHED_TV_NO_EPS_JSON);
 
-    Anime savedAnime = new Anime();
-    savedAnime.setId(1L);
-    Season savedSeason = new Season();
-    savedSeason.setId(10L);
+    Anime savedAnime = buildSavedAnime(1L, "Test Anime EN");
+    Season savedSeason = buildSavedSeason(10L);
 
     when(animeRepository.findByExternalId(101L)).thenReturn(Optional.empty());
-    when(genreRepository.findAll()).thenReturn(List.of()); // пустой кэш жанров
+    when(genreRepository.findAll()).thenReturn(List.of()); // пустой кэш
     when(genreRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
     when(animeRepository.save(any())).thenReturn(savedAnime);
     when(seasonRepository.findByExternalId(101L)).thenReturn(Optional.empty());
@@ -316,26 +340,25 @@ class AnimeImportServiceExtendedTest {
 
     service.saveFranchise(List.of(anilistMedia), 1, false);
 
-    // 2 новых жанра → genreRepository.save вызывается 2 раза
+    // 2 новых жанра → save вызывается 2 раза
     verify(genreRepository, times(2)).save(any());
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // importFromApi — успешный путь через processFranchise → self.saveFranchise
+  // importFromApi — через processFranchise → self.saveFranchise
   // ═══════════════════════════════════════════════════════════════════════════
 
   @Test
-  @DisplayName("importFromApi — медиа найдена, self.saveFranchise возвращает Anime → present")
+  @DisplayName("importFromApi — медиа найдена (episodes=12), saveFranchise → present")
   void importFromApi_validMedia_saveFranchiseReturnsAnime_returnsPresent() {
+    // episodes=12 → hasEpisodes() == true → registerNode добавляет в allMedia
     when(restTemplate.exchange(
         any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
-        .thenReturn(ResponseEntity.ok(FINISHED_TV_MEDIA_JSON));
+        .thenReturn(ResponseEntity.ok(FINISHED_TV_WITH_EPS_JSON));
 
-    Anime expectedAnime = new Anime();
-    expectedAnime.setId(1L);
-    expectedAnime.setTitle("Test Anime EN");
+    Anime expected = buildSavedAnime(1L, "Test Anime EN");
     when(self.saveFranchise(any(), any(int.class), any(boolean.class)))
-        .thenReturn(expectedAnime);
+        .thenReturn(expected);
 
     Optional<Anime> result = service.importFromApi("Test Anime");
 
@@ -344,11 +367,11 @@ class AnimeImportServiceExtendedTest {
   }
 
   @Test
-  @DisplayName("importFromApi — медиа найдена, self.saveFranchise выбрасывает → Optional.empty")
-  void importFromApi_validMedia_saveFranchiseThrows_returnsEmpty() {
+  @DisplayName("importFromApi — saveFranchise выбрасывает → Optional.empty")
+  void importFromApi_saveFranchiseThrows_returnsEmpty() {
     when(restTemplate.exchange(
         any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
-        .thenReturn(ResponseEntity.ok(FINISHED_TV_MEDIA_JSON));
+        .thenReturn(ResponseEntity.ok(FINISHED_TV_WITH_EPS_JSON));
 
     when(self.saveFranchise(any(), any(int.class), any(boolean.class)))
         .thenThrow(new RuntimeException("DB error"));
@@ -360,25 +383,11 @@ class AnimeImportServiceExtendedTest {
   }
 
   @Test
-  @DisplayName("importFromApi — медиа формата MUSIC (неприемлемый) → allMedia пуст → empty")
-  void importFromApi_unacceptableFormat_returnsEmpty() {
-    when(restTemplate.exchange(
-        any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
-        .thenReturn(ResponseEntity.ok(UNKNOWN_FORMAT_MEDIA_JSON));
-
-    Optional<Anime> result = service.importFromApi("Music Video");
-
-    // MUSIC — не в acceptable formats → allMedia пуст → processFranchise null
-    assertThat(result).isEmpty();
-    verify(self, never()).saveFranchise(any(), any(int.class), any(boolean.class));
-  }
-
-  @Test
-  @DisplayName("importFromApi — self.saveFranchise возвращает null → Optional.empty")
+  @DisplayName("importFromApi — saveFranchise возвращает null → Optional.empty")
   void importFromApi_saveFranchiseReturnsNull_returnsEmpty() {
     when(restTemplate.exchange(
         any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
-        .thenReturn(ResponseEntity.ok(FINISHED_TV_MEDIA_JSON));
+        .thenReturn(ResponseEntity.ok(FINISHED_TV_WITH_EPS_JSON));
 
     when(self.saveFranchise(any(), any(int.class), any(boolean.class)))
         .thenReturn(null);
@@ -388,31 +397,19 @@ class AnimeImportServiceExtendedTest {
     assertThat(result).isEmpty();
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // refreshPopularAnime — путь с медиа-элементами в массиве
-  // ═══════════════════════════════════════════════════════════════════════════
-
   @Test
-  @DisplayName("refreshPopularAnime — массив с одним элементом → processMediaNode вызывается")
-  void refreshPopularAnime_oneItem_processesNode() {
+  @DisplayName("importFromApi — формат MUSIC (неприемлемый) → allMedia пуст → empty")
+  void importFromApi_unacceptableFormat_returnsEmpty() {
     when(restTemplate.exchange(
         any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
-        .thenReturn(ResponseEntity.ok(PAGE_WITH_ONE_ITEM_JSON));
+        .thenReturn(ResponseEntity.ok(MUSIC_FORMAT_JSON));
 
-    Anime anime = new Anime();
-    anime.setId(1L);
-    when(self.saveFranchise(any(), any(int.class), any(boolean.class)))
-        .thenReturn(anime);
+    Optional<Anime> result = service.importFromApi("Music Video");
 
-    // Не бросает исключений, несмотря на Thread.sleep(3000) в processMediaNode
-    service.refreshPopularAnime(1);
-
-    verify(self).saveFranchise(any(), any(int.class), any(boolean.class));
+    // MUSIC → isAcceptableFormat == false → allMedia пуст → processFranchise null
+    assertThat(result).isEmpty();
+    verify(self, never()).saveFranchise(any(), any(int.class), any(boolean.class));
   }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // executeAnilistQuery — ответ не 2xx → выбрасывает IllegalStateException
-  // ═══════════════════════════════════════════════════════════════════════════
 
   @Test
   @DisplayName("importFromApi — AniList вернул 500 → executeAnilistQuery бросает → empty")
@@ -423,64 +420,55 @@ class AnimeImportServiceExtendedTest {
 
     Optional<Anime> result = service.importFromApi("SomeTitle");
 
-    // IllegalStateException поймано в fetchAnilistByTitle → null → Optional.empty
+    // IllegalStateException поймано в fetchAnilistByTitle → null → empty
     assertThat(result).isEmpty();
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // refreshPopularAnime — processMediaNode: InterruptedException
+  // refreshPopularAnime
   // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("refreshPopularAnime — один элемент (episodes=12) → self.saveFranchise вызывается")
+  void refreshPopularAnime_oneItem_processesNode() {
+    // episodes=12 → hasEpisodes() == true → медиа попадает в allMedia
+    when(restTemplate.exchange(
+        any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
+        .thenReturn(ResponseEntity.ok(PAGE_ONE_ITEM_JSON));
+
+    Anime anime = buildSavedAnime(1L, "Test Anime EN");
+    when(self.saveFranchise(any(), any(int.class), any(boolean.class)))
+        .thenReturn(anime);
+
+    service.refreshPopularAnime(1);
+
+    verify(self).saveFranchise(any(), any(int.class), any(boolean.class));
+  }
 
   @Test
   @DisplayName("refreshPopularAnime — processMediaNode ловит исключение, не пробрасывает")
   void refreshPopularAnime_processingThrows_doesNotPropagate() {
     when(restTemplate.exchange(
         any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
-        .thenReturn(ResponseEntity.ok(PAGE_WITH_ONE_ITEM_JSON));
+        .thenReturn(ResponseEntity.ok(PAGE_ONE_ITEM_JSON));
 
-    // self.saveFranchise выбрасывает → processMediaNode ловит его как Exception
+    // saveFranchise выбрасывает → processMediaNode ловит как Exception
     when(self.saveFranchise(any(), any(int.class), any(boolean.class)))
         .thenThrow(new RuntimeException("processing error"));
 
-    // Метод НЕ должен пробрасывать исключение
     org.junit.jupiter.api.Assertions.assertDoesNotThrow(
         () -> service.refreshPopularAnime(1)
     );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // Jikan: idMal != null → fetchJikanPage вызывается (Thread.sleep(400))
+  // Jikan: idMal != null → fetchJikanPage вызывается
   // ═══════════════════════════════════════════════════════════════════════════
 
-  private static final String MEDIA_WITH_MAL_ID_JSON = """
-      {
-        "data": {
-          "Media": {
-            "id": 404,
-            "idMal": 123,
-            "popularity": 300,
-            "title": {"romaji": "Test With Mal", "english": "Test With Mal EN"},
-            "format": "TV",
-            "status": "FINISHED",
-            "episodes": 2,
-            "duration": 24,
-            "startDate": {"year": 2021, "month": 6, "day": 15},
-            "studios": {"edges": []},
-            "genres": [],
-            "airingSchedule": {"nodes": []},
-            "relations": {"edges": []}
-          }
-        }
-      }
-      """;
-
   @Test
-  @DisplayName("saveFranchise — idMal != null, Jikan возвращает эпизоды с title")
+  @DisplayName("saveFranchise — idMal != null, Jikan возвращает эпизоды с title и romanji")
   void saveFranchise_withMalId_jikanReturnsEpisodes() throws Exception {
-    var mediaNode = objectMapper.readTree(MEDIA_WITH_MAL_ID_JSON)
-        .path("data").path("Media");
-    var anilistMedia = objectMapper.treeToValue(
-        mediaNode, org.example.animetracker.dto.external.AnilistMedia.class);
+    var anilistMedia = parseMedia(TV_WITH_MAL_ID_JSON);
 
     String jikanResponse = """
         {
@@ -492,17 +480,14 @@ class AnimeImportServiceExtendedTest {
         }
         """;
 
-    Anime savedAnime = new Anime();
-    savedAnime.setId(1L);
-    Season savedSeason = new Season();
-    savedSeason.setId(10L);
+    Anime savedAnime = buildSavedAnime(1L, "Test With Mal EN");
+    Season savedSeason = buildSavedSeason(10L);
 
     when(animeRepository.findByExternalId(404L)).thenReturn(Optional.empty());
     when(genreRepository.findAll()).thenReturn(List.of());
     when(animeRepository.save(any())).thenReturn(savedAnime);
     when(seasonRepository.findByExternalId(404L)).thenReturn(Optional.empty());
     when(seasonRepository.save(any())).thenReturn(savedSeason);
-    // Jikan HTTP call через restTemplate.getForEntity
     when(restTemplate.getForEntity(any(String.class), eq(String.class)))
         .thenReturn(ResponseEntity.ok(jikanResponse));
     when(episodeRepository.saveAll(any())).thenReturn(List.of());
@@ -515,24 +500,19 @@ class AnimeImportServiceExtendedTest {
   }
 
   @Test
-  @DisplayName("saveFranchise — Jikan возвращает пустой data-массив → нет следующей страницы")
-  void saveFranchise_jikanEmptyData_returnsNoMorePages() throws Exception {
-    var mediaNode = objectMapper.readTree(MEDIA_WITH_MAL_ID_JSON)
-        .path("data").path("Media");
-    var anilistMedia = objectMapper.treeToValue(
-        mediaNode, org.example.animetracker.dto.external.AnilistMedia.class);
+  @DisplayName("saveFranchise — Jikan возвращает пустой data → эпизоды без названий")
+  void saveFranchise_jikanEmptyData_episodesTitlesDefault() throws Exception {
+    var anilistMedia = parseMedia(TV_WITH_MAL_ID_JSON);
 
-    String jikanEmptyResponse = """
+    String jikanEmpty = """
         {
           "data": [],
           "pagination": {"has_next_page": false}
         }
         """;
 
-    Anime savedAnime = new Anime();
-    savedAnime.setId(1L);
-    Season savedSeason = new Season();
-    savedSeason.setId(10L);
+    Anime savedAnime = buildSavedAnime(1L, "Test With Mal EN");
+    Season savedSeason = buildSavedSeason(10L);
 
     when(animeRepository.findByExternalId(404L)).thenReturn(Optional.empty());
     when(genreRepository.findAll()).thenReturn(List.of());
@@ -540,28 +520,22 @@ class AnimeImportServiceExtendedTest {
     when(seasonRepository.findByExternalId(404L)).thenReturn(Optional.empty());
     when(seasonRepository.save(any())).thenReturn(savedSeason);
     when(restTemplate.getForEntity(any(String.class), eq(String.class)))
-        .thenReturn(ResponseEntity.ok(jikanEmptyResponse));
+        .thenReturn(ResponseEntity.ok(jikanEmpty));
     when(episodeRepository.saveAll(any())).thenReturn(List.of());
 
     Anime result = service.saveFranchise(List.of(anilistMedia), 1, false);
 
     assertThat(result).isNotNull();
-    // Пустой data → fetchJikanPage вернул false → заголовки по умолчанию
     verify(episodeRepository).saveAll(any());
   }
 
   @Test
-  @DisplayName("saveFranchise — Jikan возвращает не-2xx → fetchJikanPage возвращает false")
+  @DisplayName("saveFranchise — Jikan вернул не-2xx → fetchJikanPage возвращает false")
   void saveFranchise_jikanNon2xx_handledGracefully() throws Exception {
-    var mediaNode = objectMapper.readTree(MEDIA_WITH_MAL_ID_JSON)
-        .path("data").path("Media");
-    var anilistMedia = objectMapper.treeToValue(
-        mediaNode, org.example.animetracker.dto.external.AnilistMedia.class);
+    var anilistMedia = parseMedia(TV_WITH_MAL_ID_JSON);
 
-    Anime savedAnime = new Anime();
-    savedAnime.setId(1L);
-    Season savedSeason = new Season();
-    savedSeason.setId(10L);
+    Anime savedAnime = buildSavedAnime(1L, "Test With Mal EN");
+    Season savedSeason = buildSavedSeason(10L);
 
     when(animeRepository.findByExternalId(404L)).thenReturn(Optional.empty());
     when(genreRepository.findAll()).thenReturn(List.of());
@@ -572,23 +546,18 @@ class AnimeImportServiceExtendedTest {
         .thenReturn(ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(null));
     when(episodeRepository.saveAll(any())).thenReturn(List.of());
 
-    // Не пробрасывает исключение
     Anime result = service.saveFranchise(List.of(anilistMedia), 1, false);
+
     assertThat(result).isNotNull();
   }
 
   @Test
-  @DisplayName("saveFranchise — Jikan выбрасывает исключение → fetchJikanEpisodeTitles ловит его")
-  void saveFranchise_jikanThrowsException_handledGracefully() throws Exception {
-    var mediaNode = objectMapper.readTree(MEDIA_WITH_MAL_ID_JSON)
-        .path("data").path("Media");
-    var anilistMedia = objectMapper.treeToValue(
-        mediaNode, org.example.animetracker.dto.external.AnilistMedia.class);
+  @DisplayName("saveFranchise — Jikan выбрасывает исключение → обрабатывается без пробрасывания")
+  void saveFranchise_jikanThrows_handledGracefully() throws Exception {
+    var anilistMedia = parseMedia(TV_WITH_MAL_ID_JSON);
 
-    Anime savedAnime = new Anime();
-    savedAnime.setId(1L);
-    Season savedSeason = new Season();
-    savedSeason.setId(10L);
+    Anime savedAnime = buildSavedAnime(1L, "Test With Mal EN");
+    Season savedSeason = buildSavedSeason(10L);
 
     when(animeRepository.findByExternalId(404L)).thenReturn(Optional.empty());
     when(genreRepository.findAll()).thenReturn(List.of());
@@ -600,8 +569,32 @@ class AnimeImportServiceExtendedTest {
     when(episodeRepository.saveAll(any())).thenReturn(List.of());
 
     Anime result = service.saveFranchise(List.of(anilistMedia), 1, false);
+
     assertThat(result).isNotNull();
-    // Эпизоды сохраняются с заголовками по умолчанию "Episode N"
+    // Эпизоды сохраняются с заголовками "Episode N" (по умолчанию)
     verify(episodeRepository).saveAll(any());
+  }
+
+  // ─── helpers ────────────────────────────────────────────────────────────────
+
+  /** Парсит объект AnilistMedia из JSON-обёртки {"data":{"Media":{...}}}. */
+  private org.example.animetracker.dto.external.AnilistMedia parseMedia(String json)
+      throws Exception {
+    var node = objectMapper.readTree(json).path("data").path("Media");
+    return objectMapper.treeToValue(
+        node, org.example.animetracker.dto.external.AnilistMedia.class);
+  }
+
+  private Anime buildSavedAnime(Long id, String title) {
+    Anime a = new Anime();
+    a.setId(id);
+    a.setTitle(title);
+    return a;
+  }
+
+  private Season buildSavedSeason(Long id) {
+    Season s = new Season();
+    s.setId(id);
+    return s;
   }
 }

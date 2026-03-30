@@ -10,8 +10,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
 import java.util.List;
-
 import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.dto.FavoriteAnimeDto;
@@ -24,8 +24,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -42,14 +45,22 @@ class FavoriteAnimeControllerTest {
 
   @BeforeEach
   void setUp() {
-    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+
+    mockMvc = MockMvcBuilders.standaloneSetup(controller)
+        .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
+        .setMessageConverters(new MappingJackson2HttpMessageConverter(mapper))
+        .build();
   }
 
   @Test
   @DisplayName("GET /users/{userId}/favorites — возвращает коллекцию 200 OK")
   void getAllInCollection_returnsOk() throws Exception {
+    // PageRequest вместо Pageable.unpaged() — иначе Jackson бросает
+    // UnsupportedOperationException на getPageNumber()/getPageSize()
     when(favoriteAnimeService.getByUserIdSortedByAssessment(anyLong(), any(Pageable.class)))
-        .thenReturn(new PageImpl<>(List.of()));
+        .thenReturn(new PageImpl<>(new ArrayList<>(), PageRequest.of(0, 10), 0));
 
     mockMvc.perform(get("/users/1/favorites"))
         .andExpect(status().isOk());
@@ -59,7 +70,7 @@ class FavoriteAnimeControllerTest {
   @DisplayName("GET /users/{userId}/favorites/ongoing — возвращает онгоинги 200 OK")
   void getAllIsOngoingInCollection_returnsOk() throws Exception {
     when(favoriteAnimeService.getOngoingInCollection(anyLong(), any(Pageable.class)))
-        .thenReturn(new PageImpl<>(List.of()));
+        .thenReturn(new PageImpl<>(new ArrayList<>(), PageRequest.of(0, 10), 0));
 
     mockMvc.perform(get("/users/1/favorites/ongoing"))
         .andExpect(status().isOk());

@@ -41,7 +41,10 @@ class ReviewControllerTest {
 
   @BeforeEach
   void setUp() {
-    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+    mockMvc = MockMvcBuilders.standaloneSetup(controller)
+        // Добавляем поддержку Pageable в контроллерах
+        .setCustomArgumentResolvers(new org.springframework.data.web.PageableHandlerMethodArgumentResolver())
+        .build();
   }
 
   @Test
@@ -49,7 +52,7 @@ class ReviewControllerTest {
   void getAllReviewsByUser_returnsOk() throws Exception {
     when(reviewService.getAllReviewsByUser(1L)).thenReturn(List.of());
 
-    mockMvc.perform(get("/users/1/reviews"))
+    mockMvc.perform(get("/users/1/review"))
         .andExpect(status().isOk());
   }
 
@@ -59,7 +62,7 @@ class ReviewControllerTest {
     ReviewDto dto = new ReviewDto(1L, null, 9.0f, "Great!");
     when(reviewService.getReviewByUserAndAnime(1L, 2L)).thenReturn(dto);
 
-    mockMvc.perform(get("/users/1/reviews/2"))
+    mockMvc.perform(get("/users/1/review/2"))
         .andExpect(status().isOk());
   }
 
@@ -75,14 +78,14 @@ class ReviewControllerTest {
     request.setAssessment(9.0f);
     request.setText("Amazing!");
 
-    mockMvc.perform(post("/users/1/reviews")
+    mockMvc.perform(post("/users/1/review")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated());
   }
 
   @Test
-  @DisplayName("PUT /users/{userId}/reviews/{animeId} — обновление отзыва 200 OK")
+  @DisplayName("PUT /users/{userId}/review/{animeId} — обновление отзыва 200 OK")
   void updateReview_returnsOk() throws Exception {
     ReviewDto dto = new ReviewDto(1L, null, 8.0f, "Updated!");
     when(reviewService.updateReview(anyLong(), anyLong(), anyFloat(), anyString()))
@@ -93,18 +96,18 @@ class ReviewControllerTest {
     request.setAssessment(8.0f);
     request.setText("Updated!");
 
-    mockMvc.perform(put("/users/1/reviews/2")
+    mockMvc.perform(put("/users/1/review/2")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
   }
 
   @Test
-  @DisplayName("DELETE /users/{userId}/reviews/{animeId} — удаление отзыва 204 No Content")
+  @DisplayName("DELETE /users/{userId}/review/{animeId} — удаление отзыва 204 No Content")
   void deleteReview_returnsNoContent() throws Exception {
     doNothing().when(reviewService).deleteReview(1L, 2L);
 
-    mockMvc.perform(delete("/users/1/reviews/2"))
+    mockMvc.perform(delete("/users/1/review/2"))
         .andExpect(status().isNoContent());
   }
 }

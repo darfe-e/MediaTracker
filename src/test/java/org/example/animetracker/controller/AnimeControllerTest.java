@@ -7,9 +7,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.model.Anime;
@@ -23,7 +24,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -40,7 +44,13 @@ class AnimeControllerTest {
 
   @BeforeEach
   void setUp() {
-    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+
+    mockMvc = MockMvcBuilders.standaloneSetup(controller)
+        .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
+        .setMessageConverters(new MappingJackson2HttpMessageConverter(mapper))
+        .build();
   }
 
   @Test
@@ -78,8 +88,10 @@ class AnimeControllerTest {
   @Test
   @DisplayName("GET // — возвращает страницу 200 OK")
   void getAllSorted_returnsOk() throws Exception {
+    // Используем PageRequest, чтобы избежать UnsupportedOperationException
+    // при Jackson-сериализации Pageable.unpaged()
     when(animeService.getAllSortedByPopularity(any(Pageable.class)))
-        .thenReturn(new PageImpl<>(List.of()));
+        .thenReturn(new PageImpl<>(new ArrayList<>(), PageRequest.of(0, 10), 0));
 
     mockMvc.perform(get("/anime-catalogue/")
             .param("page", "0").param("size", "10"))
@@ -111,7 +123,7 @@ class AnimeControllerTest {
   @DisplayName("GET /search-jpql — возвращает 200 OK")
   void searchJpql_returnsOk() throws Exception {
     when(animeService.findByGenreAndMinSeasons(anyString(), anyInt(), any(Pageable.class)))
-        .thenReturn(new PageImpl<>(List.of()));
+        .thenReturn(new PageImpl<>(new ArrayList<>(), PageRequest.of(0, 10), 0));
 
     mockMvc.perform(get("/anime-catalogue/search-jpql")
             .param("genre", "Action").param("minSeasons", "1"))
@@ -122,7 +134,7 @@ class AnimeControllerTest {
   @DisplayName("GET /search-native — возвращает 200 OK")
   void searchNative_returnsOk() throws Exception {
     when(animeService.findByGenreAndMinSeasonsNative(anyString(), anyInt(), any(Pageable.class)))
-        .thenReturn(new PageImpl<>(List.of()));
+        .thenReturn(new PageImpl<>(new ArrayList<>(), PageRequest.of(0, 10), 0));
 
     mockMvc.perform(get("/anime-catalogue/search-native")
             .param("genre", "Action").param("minSeasons", "1"))
