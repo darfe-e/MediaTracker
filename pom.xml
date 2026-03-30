@@ -26,9 +26,15 @@
         <tag/>
         <url/>
     </scm>
+
     <properties>
         <java.version>17</java.version>
+        <!-- Путь к отчёту JaCoCo для Sonar -->
+        <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <!-- Исключаем DTO, модели и другие вспомогательные классы из подсчёта покрытия (опционально) -->
+        <sonar.exclusions>**/dto/**, **/model/**, **/config/**, **/exception/**, **/aspect/**, **/cache/**</sonar.exclusions>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -84,6 +90,35 @@
 
     <build>
         <plugins>
+            <!-- JaCoCo для сбора покрытия тестами -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.11</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- SonarScanner для анализа кода и покрытия -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>4.0.0.4121</version>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -96,6 +131,7 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -112,11 +148,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.2.0</version> <!-- Используем стабильную версию -->
+                <version>3.2.0</version>
                 <configuration>
-                    <!-- Укажите ваш файл конфигурации (checkstyle.xml или google_checks.xml) -->
                     <configLocation>checkstyle.xml</configLocation>
-                    <failsOnError>false</failsOnError>  <!-- Не ломает сборку при ошибках -->
+                    <failsOnError>false</failsOnError>
                     <consoleOutput>true</consoleOutput>
                 </configuration>
                 <executions>
@@ -128,18 +163,14 @@
                         </goals>
                     </execution>
                 </executions>
-                <!-- Явно указываем версию Checkstyle для избежания конфликтов -->
                 <dependencies>
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.12.5</version> <!-- Рабочая версия для плагина 3.2.0 -->
+                        <version>10.12.5</version>
                     </dependency>
                 </dependencies>
             </plugin>
-
         </plugins>
     </build>
-
-
 </project>
