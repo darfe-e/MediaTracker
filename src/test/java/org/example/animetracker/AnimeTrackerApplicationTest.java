@@ -1,45 +1,80 @@
 package org.example.animetracker;
 
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.animetracker.repository.AnimeRepository;
 import org.example.animetracker.service.AnimeImportService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.web.client.RestTemplate;
 
-@ExtendWith(MockitoExtension.class)
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
+// Используем RANDOM_PORT, чтобы не было конфликтов по портам
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class AnimeTrackerApplicationTest {
 
-  @Mock private AnimeImportService importService;
-  @Mock private AnimeRepository animeRepository;
+  @Autowired
+  private ApplicationContext context;
 
-  private final AnimeTrackerApplication app = new AnimeTrackerApplication();
+  @MockitoBean
+  private AnimeRepository animeRepository;
 
-  @Test
-  @DisplayName("CommandLineRunner — БД пуста (count=0) → вызывает refreshPopularAnime")
-  void initData_databaseEmpty_callsRefresh() throws Exception {
-    when(animeRepository.count()).thenReturn(0L);
+  @MockitoBean
+  private AnimeImportService importService;
 
-    CommandLineRunner runner = app.initData(importService, animeRepository);
-    runner.run();
-
-    verify(importService).refreshPopularAnime(5);
+  @BeforeEach
+  void resetMocks() {
+    // Сбрасываем моки перед каждым тестом,
+    // так как CommandLineRunner уже мог дернуть их при старте контекста
+    Mockito.reset(animeRepository, importService);
   }
 
   @Test
-  @DisplayName("CommandLineRunner — БД не пуста (count>0) → импорт пропускается")
-  void initData_databaseNotEmpty_skipsImport() throws Exception {
-    when(animeRepository.count()).thenReturn(10L);
+  @DisplayName("Context — проверка создания бинов конфигурации")
+  void contextLoads() {
+    assertThat(context.getBean(RestTemplate.class)).isNotNull();
+    assertThat(context.getBean(ObjectMapper.class)).isNotNull();
+    assertThat(context.getBean(AnimeTrackerApplication.class)).isNotNull();
+  }
 
-    CommandLineRunner runner = app.initData(importService, animeRepository);
+  @Test
+  @DisplayName("initData — если БД пуста, должен вызываться refreshPopularAnime")
+  void initData_whenDbEmpty_callsImport() throws Exception {
+    when(animeRepository.count()).thenReturn(0L);
+    CommandLineRunner runner = context.getBean(CommandLineRunner.class);
+
     runner.run();
 
-    verify(importService, never()).refreshPopularAnime(5);
+    verify(animeRepository, atLeastOnce()).count();
+    verify(importService, times(1)).refreshPopularAnime(5);
+  }
+
+  @Test
+  @DisplayName("initData — если БД заполнена, импорт должен быть пропущен")
+  void initData_whenDbNotEmpty_skipsImport() throws Exception {
+    when(animeRepository.count()).thenReturn(10L);
+    CommandLineRunner runner = context.getBean(CommandLineRunner.class);
+
+    runner.run();
+
+    verify(animeRepository, atLeastOnce()).count();
+    verify(importService, never()).refreshPopularAnime(anyInt());
+  }
+
+  @Test
+  @DisplayName("main — проверка запуска приложения")
+  void mainMethodTest() {
+    // Чтобы main не пытался занять порт 8080, запускаем его без веб-сервера
+    AnimeTrackerApplication.main(new String[]{"--spring.main.web-application-type=none"});
+
+    assertThat(context.getBean(AnimeTrackerApplication.class)).isNotNull();
   }
 }
