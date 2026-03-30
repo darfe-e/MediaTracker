@@ -34,8 +34,6 @@ class ReviewServiceTest {
   @InjectMocks
   private ReviewService reviewService;
 
-  // ─── getReviewByUserAndAnime ──────────────────────────────────────────────
-
   @Test
   @DisplayName("getReviewByUserAndAnime — успех")
   void getReviewByUserAndAnime_success() {
@@ -79,8 +77,6 @@ class ReviewServiceTest {
         .hasMessageContaining("Review not found for user 1");
   }
 
-  // ─── getAllReviewsByUser ───────────────────────────────────────────────────
-
   @Test
   @DisplayName("getAllReviewsByUser — возвращает все отзывы пользователя")
   void getAllReviewsByUser_returnsList() {
@@ -105,8 +101,6 @@ class ReviewServiceTest {
 
     assertThat(result).isEmpty();
   }
-
-  // ─── saveReview ───────────────────────────────────────────────────────────
 
   @Test
   @DisplayName("saveReview — успешное создание отзыва")
@@ -156,8 +150,6 @@ class ReviewServiceTest {
         .hasMessageContaining("Review already exists");
   }
 
-  // ─── updateReview ─────────────────────────────────────────────────────────
-
   @Test
   @DisplayName("updateReview — успешное обновление отзыва")
   void updateReview_success() {
@@ -204,8 +196,6 @@ class ReviewServiceTest {
         .hasMessageContaining("Review not found for user 1");
   }
 
-  // ─── deleteReview ─────────────────────────────────────────────────────────
-
   @Test
   @DisplayName("deleteReview — успешное удаление")
   void deleteReview_success() {
@@ -247,8 +237,6 @@ class ReviewServiceTest {
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("Review not found for user 1");
   }
-
-  // ─── helpers ─────────────────────────────────────────────────────────────
 
   private FavoriteAnime buildFavorite(Long id) {
     User  user  = new User();

@@ -25,14 +25,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-/**
- * Unit-тесты для AnimeImportService.
- *
- * <p>Все обращения к внешним API (AniList, Jikan) изолированы через мок {@link RestTemplate}.
- * Метод {@code saveFranchise} имеет protected-доступ, поэтому self-injection мокируется,
- * но его методы не верифицируются напрямую — вместо этого проверяется поведение
- * публичного API сервиса.
- */
 @ExtendWith(MockitoExtension.class)
 class AnimeImportServiceTest {
 
@@ -54,8 +46,6 @@ class AnimeImportServiceTest {
         animeRepository, genreRepository, seasonRepository,
         episodeRepository, restTemplate, objectMapper, self, searchCache);
   }
-
-  // ─── importFromApi ────────────────────────────────────────────────────────
 
   @Test
   @DisplayName("importFromApi — AniList возвращает null Media → Optional.empty()")
@@ -100,8 +90,6 @@ class AnimeImportServiceTest {
     assertThat(result).isEmpty();
   }
 
-  // ─── refreshPopularAnime ─────────────────────────────────────────────────
-
   @Test
   @DisplayName("refreshPopularAnime — Page.media не является массивом → ничего не обрабатывается")
   void refreshPopularAnime_notArrayResponse_nothingProcessed() {
@@ -120,7 +108,6 @@ class AnimeImportServiceTest {
 
     service.refreshPopularAnime(5);
 
-    // Ни одна запись не должна быть запрошена из репозитория
     verify(animeRepository, never()).findByExternalId(any());
   }
 
@@ -135,13 +122,10 @@ class AnimeImportServiceTest {
         eq(String.class)
     )).thenThrow(new RuntimeException("Timeout"));
 
-    // WHEN & THEN
-    // 1. Проверяем, что исключение не пробрасывается выше (метод поглощает его)
     org.junit.jupiter.api.Assertions.assertDoesNotThrow(() ->
       service.refreshPopularAnime(10)
     );
 
-    // 2. Проверяем, что вызов API действительно был совершен
     verify(restTemplate, times(1)).exchange(
         any(String.class),
         eq(HttpMethod.POST),
@@ -149,8 +133,6 @@ class AnimeImportServiceTest {
         eq(String.class)
     );
 
-    // 3. Убеждаемся, что из-за ошибки в API данные НЕ начали сохраняться в базу
-    // (замени animeRepository на тот репозиторий, который используется в методе)
     verify(animeRepository, never()).save(any());
   }
 
@@ -175,9 +157,6 @@ class AnimeImportServiceTest {
     verify(animeRepository, never()).findByExternalId(any());
   }
 
-  // ─── helpers ─────────────────────────────────────────────────────────────
-
-  /** Ответ AniList, где узел Media отсутствует (null) */
   private String buildNullMediaJson() throws Exception {
     ObjectNode root = objectMapper.createObjectNode();
     ObjectNode data = objectMapper.createObjectNode();

@@ -28,8 +28,6 @@ class UserServiceTest {
   @InjectMocks
   private UserService userService;
 
-  // ─── createUser ──────────────────────────────────────────────────────────
-
   @Test
   @DisplayName("createUser — успешное создание пользователя")
   void createUser_success_returnsDto() {
@@ -56,8 +54,6 @@ class UserServiceTest {
     assertThat(result.getName()).isEqualTo(name);
   }
 
-  // ─── deleteUser ───────────────────────────────────────────────────────────
-
   @Test
   @DisplayName("deleteUser — пользователь существует → успешное удаление")
   void deleteUser_userExists_deletedSuccessfully() {
@@ -79,8 +75,6 @@ class UserServiceTest {
 
     verify(userRepository, never()).deleteById(any());
   }
-
-  // ─── helpers ─────────────────────────────────────────────────────────────
 
   private User buildUser(Long id, String name) {
     User u = new User();

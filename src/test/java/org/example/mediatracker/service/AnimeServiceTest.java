@@ -47,26 +47,21 @@ class AnimeServiceTest {
   @InjectMocks
   private AnimeService animeService;
 
-  // ─── findByIdWithoutProblem ───────────────────────────────────────────────
-
   @Test
   @DisplayName("findByIdWithoutProblem — пустые сезоны отфильтровываются, непустые остаются")
   void findByIdWithoutProblem_found_filtersEmptySeasons() {
     Anime anime = buildAnime(1L);
     when(animeRepository.findByIdWithDetails(1L)).thenReturn(Optional.of(anime));
 
-    // Готовим два SeasonDto: один с эпизодами, другой пустой
     SeasonDto nonEmptySeason = mock(SeasonDto.class);
     when(nonEmptySeason.getEpisodes()).thenReturn(List.of(mock(EpisodeDto.class)));
 
     SeasonDto emptySeason = mock(SeasonDto.class);
     when(emptySeason.getEpisodes()).thenReturn(Collections.emptyList());
 
-    // AnimeDetailedDto мокируем целиком, чтобы не зависеть от конструктора
     AnimeDetailedDto mockDto = mock(AnimeDetailedDto.class);
     when(mockDto.getSeasons()).thenReturn(List.of(nonEmptySeason, emptySeason));
 
-    // Перехватываем вызов setSeasons, чтобы проверить, что сервис передал отфильтрованный список
     List<SeasonDto> capturedSeasons = new ArrayList<>();
     doAnswer(inv -> {
       capturedSeasons.clear();
@@ -80,7 +75,6 @@ class AnimeServiceTest {
       AnimeDetailedDto result = animeService.findByIdWithoutProblem(1L);
 
       assertThat(result).isNotNull();
-      // Сервис должен оставить только непустые сезоны
       assertThat(capturedSeasons)
           .hasSize(1)
           .containsExactly(nonEmptySeason);
@@ -97,7 +91,6 @@ class AnimeServiceTest {
         .hasMessageContaining("Anime not found with id: 99");
   }
 
-  // ─── findByStudioAndName ──────────────────────────────────────────────────
 
   @Test
   @DisplayName("findByStudioAndName — studio + title → результат")
@@ -186,7 +179,6 @@ class AnimeServiceTest {
         .hasMessageContaining("No anime found");
   }
 
-  // ─── getAllSortedByPopularity ──────────────────────────────────────────────
 
   @Test
   @DisplayName("getAllSortedByPopularity — возвращает страницу DTO")
@@ -200,8 +192,6 @@ class AnimeServiceTest {
     assertThat(result.getTotalElements()).isEqualTo(1);
     verify(animeRepository).findAllSorted(pageable);
   }
-
-  // ─── findByGenreAndMinSeasons (JPQL) ─────────────────────────────────────
 
   @Test
   @DisplayName("findByGenreAndMinSeasons — cache hit → репозиторий не вызывается")
@@ -234,8 +224,6 @@ class AnimeServiceTest {
     verify(searchCache).put(eq(key), any());
   }
 
-  // ─── findByGenreAndMinSeasonsNative ──────────────────────────────────────
-
   @Test
   @DisplayName("findByGenreAndMinSeasonsNative — cache hit → репозиторий не вызывается")
   void findByGenreAndMinSeasonsNative_cacheHit_skipRepository() {
@@ -267,8 +255,6 @@ class AnimeServiceTest {
     assertThat(result.getTotalElements()).isEqualTo(1);
     verify(searchCache).put(eq(key), any());
   }
-
-  // ─── helpers ─────────────────────────────────────────────────────────────
 
   private Anime buildAnime(Long id) {
     Anime anime = new Anime();

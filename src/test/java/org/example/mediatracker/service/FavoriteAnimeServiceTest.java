@@ -42,8 +42,6 @@ class FavoriteAnimeServiceTest {
   @InjectMocks
   private FavoriteAnimeService favoriteAnimeService;
 
-  // ─── getByUserIdSortedByAssessment ────────────────────────────────────────
-
   @Test
   @DisplayName("getByUserIdSortedByAssessment — возвращает страницу DTO")
   void getByUserIdSortedByAssessment_returnsPage() {
@@ -58,8 +56,6 @@ class FavoriteAnimeServiceTest {
     assertThat(result.getTotalElements()).isEqualTo(1);
     verify(favoriteAnimeRepository).findAnimeByUserIdSortedByAssessment(1L, pageable);
   }
-
-  // ─── getConnection ────────────────────────────────────────────────────────
 
   @Test
   @DisplayName("getConnection — связь найдена → возвращает DetailedDto")
@@ -83,8 +79,6 @@ class FavoriteAnimeServiceTest {
         .hasMessageContaining("Favorite not found for user 1");
   }
 
-  // ─── getOngoingInCollection ───────────────────────────────────────────────
-
   @Test
   @DisplayName("getOngoingInCollection — возвращает только онгоинги")
   void getOngoingInCollection_returnsOngoingAnimes() {
@@ -96,8 +90,6 @@ class FavoriteAnimeServiceTest {
 
     assertThat(result.getTotalElements()).isEqualTo(1);
   }
-
-  // ─── addAnimeToCollection ─────────────────────────────────────────────────
 
   @Test
   @DisplayName("addAnimeToCollection — успешное добавление")
@@ -155,8 +147,6 @@ class FavoriteAnimeServiceTest {
             .isEqualTo(HttpStatus.CONFLICT));
   }
 
-  // ─── removeConnection ─────────────────────────────────────────────────────
-
   @Test
   @DisplayName("removeConnection — успешное удаление")
   void removeConnection_success() {
@@ -177,8 +167,6 @@ class FavoriteAnimeServiceTest {
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("Favorite not found for user 1");
   }
-
-  // ─── addMultipleAnimesToCollectionBulk ────────────────────────────────────
 
   @Test
   @DisplayName("addMultipleAnimesToCollectionBulk — успех")
@@ -248,8 +236,6 @@ class FavoriteAnimeServiceTest {
     verify(animeRepository, never()).findById(any());
   }
 
-  // ─── addBulkNonTransactional ──────────────────────────────────────────────
-
   @Test
   @DisplayName("addBulkNonTransactional — успех: каждое аниме сохраняется по отдельности")
   void addBulkNonTransactional_success() {
@@ -298,13 +284,10 @@ class FavoriteAnimeServiceTest {
     List<Long> animeIds = List.of(99L);
     Long userId = 1L;
 
-    // 2. В лямбде оставляем только ОДИН вызов
     assertThatThrownBy(() -> favoriteAnimeService.addBulkNonTransactional(userId, animeIds))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("Anime not found: 99");
   }
-
-  // ─── helpers ─────────────────────────────────────────────────────────────
 
   private Anime buildAnime(Long id) {
     Anime a = new Anime();
