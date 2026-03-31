@@ -577,7 +577,6 @@ class AnimeImportServiceExtendedTest {
 
   // ─── helpers ────────────────────────────────────────────────────────────────
 
-  /** Парсит объект AnilistMedia из JSON-обёртки {"data":{"Media":{...}}}. */
   private org.example.animetracker.dto.external.AnilistMedia parseMedia(String json)
       throws Exception {
     var node = objectMapper.readTree(json).path("data").path("Media");
