@@ -147,7 +147,7 @@ public class AnimeImportService {
     }
   }
 
-  private Anime processFranchise(AnilistMedia startNode) {
+  Anime processFranchise(AnilistMedia startNode) {
     if (startNode == null) {
       return null;
     }

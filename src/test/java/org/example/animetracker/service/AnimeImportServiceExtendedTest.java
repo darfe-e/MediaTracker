@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.example.animetracker.cache.AnimeSearchCache;
+import org.example.animetracker.dto.external.AnilistMedia;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.model.Season;
 import org.example.animetracker.repository.AnimeRepository;
@@ -624,6 +625,8 @@ class AnimeImportServiceExtendedTest {
     Thread.interrupted();
   }
 
+
+
   // ═══════════════════════════════════════════════════════════════════════════
   // collectFullChain — обход SEQUEL-связи, связанное медиа найдено
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1063,6 +1066,15 @@ class AnimeImportServiceExtendedTest {
     verify(genreRepository, times(1)).save(any());
     // episodes=0 → saveAll не вызывается
     verify(episodeRepository, never()).saveAll(any());
+  }
+
+  @Test
+  @DisplayName("processFranchise - возвращает null")
+  void processFranchise_returns_null(){
+    AnilistMedia startNode = null;
+
+    Anime result = service.processFranchise(startNode);
+    assertThat(result).isNull();
   }
 
   // ─── helpers ────────────────────────────────────────────────────────────────
