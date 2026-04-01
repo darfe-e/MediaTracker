@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 import org.example.animetracker.cache.AnimeSearchCache;
 import org.example.animetracker.dto.external.AnilistMedia;
 import org.example.animetracker.model.Anime;
@@ -24,6 +26,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpMethod;
@@ -625,8 +630,6 @@ class AnimeImportServiceExtendedTest {
     Thread.interrupted();
   }
 
-
-
   // ═══════════════════════════════════════════════════════════════════════════
   // collectFullChain — обход SEQUEL-связи, связанное медиа найдено
   // ═══════════════════════════════════════════════════════════════════════════
@@ -694,8 +697,6 @@ class AnimeImportServiceExtendedTest {
   @Test
   @DisplayName("importFromApi — retry-sleep прерывается → fetchAnilistByIdWithRetry возвращает null")
   void importFromApi_fetchAnilistByIdRetry_interruptedDuringSleep_returnsNull() {
-    // Вызов 1: стартовое медиа с SEQUEL на 501
-    // Вызов 2 (attempt=1 для 501): прерываем поток + кидаем исключение →
     AtomicInteger callCount = new AtomicInteger(0);
     when(restTemplate.exchange(
         any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
@@ -1068,6 +1069,546 @@ class AnimeImportServiceExtendedTest {
     verify(episodeRepository, never()).saveAll(any());
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // isAcceptableFormat — format == null → return false  (image 7, null-guard)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("importFromApi — format=null → isAcceptableFormat false → allMedia пуст → empty")
+  void importFromApi_nullFormat_isAcceptableFormatNullGuard_returnsEmpty() {
+    String json = """
+        {
+          "data": {
+            "Media": {
+              "id": 1001, "idMal": null, "popularity": 100,
+              "title": {"romaji": "Null Format Anime", "english": null},
+              "format": null, "status": "FINISHED",
+              "episodes": 5, "duration": 24,
+              "startDate": null,
+              "studios": {"edges": []}, "genres": [],
+              "airingSchedule": {"nodes": []},
+              "relations": {"edges": []}
+            }
+          }
+        }
+        """;
+    when(restTemplate.exchange(any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
+        .thenReturn(ResponseEntity.ok(json));
+
+    Optional<Anime> result = service.importFromApi("Null Format Anime");
+
+    // format=null → isAcceptableFormat null-guard hits → false → allMedia пуст → processFranchise null
+    assertThat(result).isEmpty();
+    verify(self, never()).saveFranchise(any(), any(int.class), any(boolean.class));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // isTvFormat — format == null → return false  (image 7)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("saveFranchise — format=null → isTvFormat false, берёт первый элемент как root")
+  void saveFranchise_nullFormatMedia_isTvFormatNullGuard_returnsFalse() throws Exception {
+    String json = """
+        {
+          "data": {
+            "Media": {
+              "id": 1002, "idMal": null, "popularity": 100,
+              "title": {"romaji": "Null Format", "english": null},
+              "format": null, "status": "FINISHED",
+              "episodes": 0, "duration": 24,
+              "startDate": {"year": 2020, "month": 1, "day": 1},
+              "studios": {"edges": []}, "genres": [],
+              "airingSchedule": {"nodes": []},
+              "relations": {"edges": []}
+            }
+          }
+        }
+        """;
+    var media = parseMedia(json);
+
+    Anime savedAnime = buildSavedAnime(1L, "Null Format");
+    Season savedSeason = buildSavedSeason(1L);
+
+    when(animeRepository.findByExternalId(1002L)).thenReturn(Optional.empty());
+    when(genreRepository.findAll()).thenReturn(List.of());
+    when(animeRepository.save(any())).thenReturn(savedAnime);
+    when(seasonRepository.findByExternalId(1002L)).thenReturn(Optional.empty());
+    when(seasonRepository.save(any())).thenReturn(savedSeason);
+
+    // format=null → isTvFormat=false → фильтр TV пуст → orElse(allMedia.get(0))
+    Anime result = service.saveFranchise(List.of(media), 0, false);
+
+    assertThat(result).isNotNull();
+    verify(animeRepository).findByExternalId(1002L);
+    verify(episodeRepository, never()).saveAll(any()); // episodes=0
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // isReleasingOrUpcoming — status == null → return false  (image 8, line 492)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("saveFranchise — status=null → isReleasingOrUpcoming false, episodes=0 → нет эпизодов")
+  void saveFranchise_nullStatus_isReleasingOrUpcomingNullGuard_returnsFalse() throws Exception {
+    String json = """
+        {
+          "data": {
+            "Media": {
+              "id": 1003, "idMal": null, "popularity": 100,
+              "title": {"romaji": "Null Status", "english": null},
+              "format": "TV", "status": null,
+              "episodes": null, "duration": 24,
+              "startDate": {"year": 2020, "month": 1, "day": 1},
+              "studios": {"edges": []}, "genres": [],
+              "airingSchedule": {"nodes": []},
+              "relations": {"edges": []}
+            }
+          }
+        }
+        """;
+    var media = parseMedia(json);
+
+    Anime savedAnime = buildSavedAnime(1L, "Null Status");
+    Season savedSeason = buildSavedSeason(1L);
+
+    when(animeRepository.findByExternalId(1003L)).thenReturn(Optional.empty());
+    when(genreRepository.findAll()).thenReturn(List.of());
+    when(animeRepository.save(any())).thenReturn(savedAnime);
+    when(seasonRepository.findByExternalId(1003L)).thenReturn(Optional.empty());
+    when(seasonRepository.save(any())).thenReturn(savedSeason);
+
+    // status=null → isReleasingOrUpcoming null-guard → false
+    // episodes=null, isReleasingOrUpcoming=false → resolveEpisodeCount=0 → нет saveAll
+    Anime result = service.saveFranchise(List.of(media), 0, false);
+
+    assertThat(result).isNotNull();
+    verify(episodeRepository, never()).saveAll(any());
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // registerNode — media.getRelations() == null → early return  (image 2)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("provideInvalidRelationsData")
+  @DisplayName("importFromApi — некорректные/игнорируемые relations не добавляют элементы в очередь (fetch не вызывается)")
+  void importFromApi_invalidOrIgnoredRelations_skipsQueueAndReturnsEarly(String description, String relationsJson) {
+    // Подставляем конкретное значение relations в общий JSON-шаблон
+    String json = """
+        {
+          "data": {
+            "Media": {
+              "id": 1000, "idMal": null, "popularity": 100,
+              "title": {"romaji": "Test Anime", "english": "Test Anime EN"},
+              "format": "TV", "status": "FINISHED",
+              "episodes": 5, "duration": 24,
+              "startDate": {"year": 2020, "month": 1, "day": 1},
+              "studios": {"edges": []}, "genres": [],
+              "airingSchedule": {"nodes": []},
+              "relations": %s
+            }
+          }
+        }
+        """.formatted(relationsJson);
+
+    when(restTemplate.exchange(any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
+        .thenReturn(ResponseEntity.ok(json));
+
+    Anime anime = buildSavedAnime(1L, "Test Anime EN");
+    when(self.saveFranchise(any(), any(int.class), any(boolean.class))).thenReturn(anime);
+
+    Optional<Anime> result = service.importFromApi("Test Anime");
+
+    assertThat(result).isPresent();
+    // Очередь toFetch пуста или проигнорирована -> дополнительных вызовов API нет
+    verify(restTemplate, times(1))
+        .exchange(any(String.class), eq(HttpMethod.POST), any(), eq(String.class));
+  }
+
+  private static Stream<Arguments> provideInvalidRelationsData() {
+    return Stream.of(
+        Arguments.of("relations=null -> early return",
+            "null"),
+        Arguments.of("relations.edges=null -> early return",
+            "{\"edges\": null}"),
+        Arguments.of("null edge в edges[] -> continue",
+            "{\"edges\": [null]}"),
+        Arguments.of("edge.node=null -> continue",
+            "{\"edges\": [{\"relationType\": \"SEQUEL\", \"node\": null}]}"),
+        Arguments.of("relationType=ADAPTATION (!isSequelOrPrequel) -> continue",
+            "{\"edges\": [{\"relationType\": \"ADAPTATION\", \"node\": {\"id\": 9999}}]}")
+    );
+  }
+  // ═══════════════════════════════════════════════════════════════════════════
+  // registerNode — visited.contains(media.getId()) → early return  (image 2)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("registerNode — fetchAnilistByIdWithRetry вернул медиа с уже посещённым ID → пропускается")
+  void importFromApi_fetchedSequelHasAlreadyVisitedId_registerNodeSkips() {
+    // Вызов 1: fetchAnilistByTitle → медиа id=500, SEQUEL → 501
+    // Вызов 2: fetchAnilistByIdWithRetry(501) → возвращает медиа с id=500 (уже в visited)
+    // registerNode(500) → visited.contains(500) = true → return досрочно
+    AtomicInteger callCount = new AtomicInteger(0);
+    when(restTemplate.exchange(any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
+        .thenAnswer(inv -> {
+          int call = callCount.incrementAndGet();
+          if (call == 1) {
+            return ResponseEntity.ok(MEDIA_WITH_SEQUEL_JSON); // id=500, SEQUEL→501
+          }
+          // "Запрашиваем 501", но мок возвращает уже посещённый id=500
+          return ResponseEntity.ok("""
+              {
+                "data": {
+                  "Media": {
+                    "id": 500, "idMal": null, "popularity": 900,
+                    "title": {"romaji": "Start Anime", "english": "Start Anime EN"},
+                    "format": "TV", "status": "FINISHED", "episodes": 12, "duration": 24,
+                    "startDate": {"year": 2020, "month": 1, "day": 1},
+                    "studios": {"edges": []}, "genres": [],
+                    "airingSchedule": {"nodes": []},
+                    "relations": {"edges": []}
+                  }
+                }
+              }
+              """);
+        });
+
+    Anime anime = buildSavedAnime(1L, "Start Anime EN");
+    when(self.saveFranchise(any(), any(int.class), any(boolean.class))).thenReturn(anime);
+
+    Optional<Anime> result = service.importFromApi("Start Anime");
+
+    // visited.contains(500)=true → registerNode возвращается → allMedia содержит только 500
+    assertThat(result).isPresent();
+    verify(self).saveFranchise(any(), any(int.class), any(boolean.class));
+    verify(restTemplate, times(2))
+        .exchange(any(String.class), eq(HttpMethod.POST), any(), eq(String.class));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // fetchAnilistByIdWithRetry — node.isNull() → return null  (image 4, lines 369-370)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("importFromApi — SEQUEL: fetchAnilistByIdWithRetry получает null Media → return null, log.warn")
+  void importFromApi_sequelFetchReturnsNullMedia_fetchByIdReturnsNull() {
+    // Вызов 1: стартовое медиа с SEQUEL на 501
+    // Вызов 2: fetchAnilistByIdWithRetry attempt 1 → {"data":{"Media":null}} → node.isNull() → return null
+    AtomicInteger callCount = new AtomicInteger(0);
+    when(restTemplate.exchange(any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
+        .thenAnswer(inv -> {
+          int call = callCount.incrementAndGet();
+          return call == 1
+              ? ResponseEntity.ok(MEDIA_WITH_SEQUEL_JSON)
+              : ResponseEntity.ok("{\"data\":{\"Media\":null}}");
+        });
+
+    Anime anime = buildSavedAnime(1L, "Start Anime EN");
+    when(self.saveFranchise(any(), any(int.class), any(boolean.class))).thenReturn(anime);
+
+    Optional<Anime> result = service.importFromApi("Start Anime");
+
+    // null Media → node.isNull()=true → return null (line 370)
+    // log.warn("Не удалось загрузить id=501 (пропускаем)") вызывается
+    assertThat(result).isPresent();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // fetchAnilistByIdWithRetry — node.isMissingNode() → return null  (image 4)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("importFromApi — SEQUEL: fetchAnilistByIdWithRetry: Media отсутствует в ответе → isMissingNode")
+  void importFromApi_sequelFetchReturnsMissingMediaNode_fetchByIdReturnsNull() {
+    // {"data":{}} → .path("Media") → MissingNode → isMissingNode()=true → return null
+    AtomicInteger callCount = new AtomicInteger(0);
+    when(restTemplate.exchange(any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
+        .thenAnswer(inv -> {
+          int call = callCount.incrementAndGet();
+          return call == 1
+              ? ResponseEntity.ok(MEDIA_WITH_SEQUEL_JSON)
+              : ResponseEntity.ok("{\"data\":{}}");
+        });
+
+    Anime anime = buildSavedAnime(1L, "Start Anime EN");
+    when(self.saveFranchise(any(), any(int.class), any(boolean.class))).thenReturn(anime);
+
+    Optional<Anime> result = service.importFromApi("Start Anime");
+
+    // isMissingNode()=true → return null → log.warn → allMedia содержит только стартовое медиа
+    assertThat(result).isPresent();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // fetchAnilistByIdWithRetry — все 3 попытки бросают → return null (line 385)
+  // + retry-sleep (attempt < 3) → lines 375-378
+  // ВНИМАНИЕ: тест медленный (~10 сек) из-за Thread.sleep в retry-логике
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("importFromApi — все 3 retry fetchAnilistByIdWithRetry бросают → return null (line 385)")
+  void importFromApi_allThreeRetriesExhausted_fetchByIdReturnsNull() {
+    // Вызов 1: fetchAnilistByTitle → стартовое медиа с SEQUEL на 501
+    // Вызовы 2, 3, 4: 3 попытки fetchAnilistByIdWithRetry → Exception → retry sleep → line 385
+    AtomicInteger callCount = new AtomicInteger(0);
+    when(restTemplate.exchange(any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
+        .thenAnswer(inv -> {
+          int call = callCount.incrementAndGet();
+          if (call == 1) {
+            return ResponseEntity.ok(MEDIA_WITH_SEQUEL_JSON);
+          }
+          throw new RuntimeException("Network error on call " + call);
+        });
+
+    Anime anime = buildSavedAnime(1L, "Start Anime EN");
+    when(self.saveFranchise(any(), any(int.class), any(boolean.class))).thenReturn(anime);
+
+    Optional<Anime> result = service.importFromApi("Start Anime");
+
+    // attempt 1 fail → sleep 2000ms, attempt 2 fail → sleep 4000ms, attempt 3 fail → return null
+    // log.warn("Не удалось загрузить id=501 (пропускаем)") → allMedia содержит только стартовое
+    assertThat(result).isPresent();
+    // 1 (fetchByTitle) + 3 (попытки retry) = 4 вызова exchange
+    verify(restTemplate, times(4))
+        .exchange(any(String.class), eq(HttpMethod.POST), any(), eq(String.class));
+    verify(self).saveFranchise(any(), any(int.class), any(boolean.class));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Jikan fetchJikanPage — 2xx ответ с body == null → return false  (image 3, line 338)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("saveFranchise — Jikan: 2xx с null body → condition body==null → return false")
+  void saveFranchise_jikanOkWithNullBody_returnsFalse() throws Exception {
+    var media = parseMedia(TV_WITH_MAL_ID_JSON); // idMal=123, episodes=2
+
+    Anime savedAnime = buildSavedAnime(1L, "Test With Mal EN");
+    Season savedSeason = buildSavedSeason(10L);
+
+    when(animeRepository.findByExternalId(404L)).thenReturn(Optional.empty());
+    when(genreRepository.findAll()).thenReturn(List.of());
+    when(animeRepository.save(any())).thenReturn(savedAnime);
+    when(seasonRepository.findByExternalId(404L)).thenReturn(Optional.empty());
+    when(seasonRepository.save(any())).thenReturn(savedSeason);
+    // 2xx но body=null → getBody()==null → return false (line 341)
+    when(restTemplate.getForEntity(any(String.class), eq(String.class)))
+        .thenReturn(ResponseEntity.ok((String) null));
+    when(episodeRepository.saveAll(any())).thenReturn(List.of());
+
+    Anime result = service.saveFranchise(List.of(media), 1, false);
+
+    assertThat(result).isNotNull();
+    // body=null → return false → titles пустой → дефолтные заголовки эпизодов
+    verify(episodeRepository).saveAll(any());
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Jikan fetchJikanPage — data не является массивом → return false  (image 3, line 346)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("saveFranchise — Jikan: data — объект, не массив → !data.isArray() → return false")
+  void saveFranchise_jikanDataNotArray_returnsFalse() throws Exception {
+    var media = parseMedia(TV_WITH_MAL_ID_JSON);
+
+    String jikanNotArray = """
+        {
+          "data": {"error": "not an array"},
+          "pagination": {"has_next_page": false}
+        }
+        """;
+
+    Anime savedAnime = buildSavedAnime(1L, "Test With Mal EN");
+    Season savedSeason = buildSavedSeason(10L);
+
+    when(animeRepository.findByExternalId(404L)).thenReturn(Optional.empty());
+    when(genreRepository.findAll()).thenReturn(List.of());
+    when(animeRepository.save(any())).thenReturn(savedAnime);
+    when(seasonRepository.findByExternalId(404L)).thenReturn(Optional.empty());
+    when(seasonRepository.save(any())).thenReturn(savedSeason);
+    when(restTemplate.getForEntity(any(String.class), eq(String.class)))
+        .thenReturn(ResponseEntity.ok(jikanNotArray));
+    when(episodeRepository.saveAll(any())).thenReturn(List.of());
+
+    Anime result = service.saveFranchise(List.of(media), 1, false);
+
+    assertThat(result).isNotNull();
+    // !data.isArray() → return false → эпизоды с дефолтными заголовками
+    verify(episodeRepository).saveAll(any());
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Jikan fetchJikanPage — epNum <= 0 → ни одна ветка не записывает title  (image 3, line 354)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("saveFranchise — Jikan: epNum=0 → обе ветки if/else if ложные → title не записывается")
+  void saveFranchise_jikanEpisodeNumZero_neitherBranchTaken() throws Exception {
+    var media = parseMedia(TV_WITH_MAL_ID_JSON); // episodes=2
+
+    // mal_id=0 → epNum=0 → epNum > 0 false → обе ветки пропускаются
+    String jikanZeroId = """
+        {
+          "data": [
+            {"mal_id": 0, "title": "Should Be Skipped", "title_romanji": "Also Skipped"},
+            {"mal_id": 1, "title": "Real Episode", "title_romanji": null}
+          ],
+          "pagination": {"has_next_page": false}
+        }
+        """;
+
+    Anime savedAnime = buildSavedAnime(1L, "Test With Mal EN");
+    Season savedSeason = buildSavedSeason(10L);
+
+    when(animeRepository.findByExternalId(404L)).thenReturn(Optional.empty());
+    when(genreRepository.findAll()).thenReturn(List.of());
+    when(animeRepository.save(any())).thenReturn(savedAnime);
+    when(seasonRepository.findByExternalId(404L)).thenReturn(Optional.empty());
+    when(seasonRepository.save(any())).thenReturn(savedSeason);
+    when(restTemplate.getForEntity(any(String.class), eq(String.class)))
+        .thenReturn(ResponseEntity.ok(jikanZeroId));
+    when(episodeRepository.saveAll(any())).thenReturn(List.of());
+
+    Anime result = service.saveFranchise(List.of(media), 1, false);
+
+    assertThat(result).isNotNull();
+    verify(episodeRepository).saveAll(any());
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // fillAnimeInfo — English пустой → используется romaji  (image 6, line 425)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("saveFranchise — english=\"\" (blank) → isBlank()=true → используется romaji")
+  void saveFranchise_englishBlankString_usesRomaji() throws Exception {
+    String json = """
+        {
+          "data": {
+            "Media": {
+              "id": 1010, "idMal": null, "popularity": 100,
+              "title": {"romaji": "Romaji Title", "english": ""},
+              "format": "TV", "status": "FINISHED",
+              "episodes": 0, "duration": 24,
+              "startDate": {"year": 2020, "month": 1, "day": 1},
+              "studios": {"edges": []}, "genres": [],
+              "airingSchedule": {"nodes": []},
+              "relations": {"edges": []}
+            }
+          }
+        }
+        """;
+    var media = parseMedia(json);
+
+    Season savedSeason = buildSavedSeason(1L);
+
+    when(animeRepository.findByExternalId(1010L)).thenReturn(Optional.empty());
+    when(genreRepository.findAll()).thenReturn(List.of());
+    // Возвращаем аргумент (Anime с проставленным title), чтобы проверить title
+    when(animeRepository.save(any())).thenAnswer(inv -> {
+      Anime a = inv.getArgument(0);
+      a.setId(1L);
+      return a;
+    });
+    when(seasonRepository.findByExternalId(1010L)).thenReturn(Optional.empty());
+    when(seasonRepository.save(any())).thenReturn(savedSeason);
+
+    Anime result = service.saveFranchise(List.of(media), 0, false);
+
+    assertThat(result).isNotNull();
+    // english="" → isBlank()=true → condition false → используется romaji
+    assertThat(result.getTitle()).isEqualTo("Romaji Title");
+    verify(episodeRepository, never()).saveAll(any()); // episodes=0
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // fillAnimeInfo — studios == null → условие studios пропускается  (image 6, line 437)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("saveFranchise — studios=null → root.getStudios()==null → блок студии пропускается")
+  void saveFranchise_studiosNull_studioBlockSkipped() throws Exception {
+    String json = """
+        {
+          "data": {
+            "Media": {
+              "id": 1011, "idMal": null, "popularity": 100,
+              "title": {"romaji": "No Studio Anime", "english": null},
+              "format": "TV", "status": "FINISHED",
+              "episodes": 0, "duration": 24,
+              "startDate": {"year": 2020, "month": 1, "day": 1},
+              "studios": null, "genres": [],
+              "airingSchedule": {"nodes": []},
+              "relations": {"edges": []}
+            }
+          }
+        }
+        """;
+    var media = parseMedia(json);
+
+    Anime savedAnime = buildSavedAnime(1L, "No Studio Anime");
+    Season savedSeason = buildSavedSeason(1L);
+
+    when(animeRepository.findByExternalId(1011L)).thenReturn(Optional.empty());
+    when(genreRepository.findAll()).thenReturn(List.of());
+    when(animeRepository.save(any())).thenReturn(savedAnime);
+    when(seasonRepository.findByExternalId(1011L)).thenReturn(Optional.empty());
+    when(seasonRepository.save(any())).thenReturn(savedSeason);
+
+    // studios=null → root.getStudios()==null → if false → студия не устанавливается
+    Anime result = service.saveFranchise(List.of(media), 0, false);
+
+    assertThat(result).isNotNull();
+    verify(animeRepository).save(any());
+    verify(episodeRepository, never()).saveAll(any());
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // fillAnimeInfo — genres == null → цикл genres пропускается  (image 6, line 446)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @Test
+  @DisplayName("saveFranchise — genres=null → if(root.getGenres() != null) false → genreRepository.save не вызывается")
+  void saveFranchise_genresNull_genreLoopSkipped() throws Exception {
+    String json = """
+        {
+          "data": {
+            "Media": {
+              "id": 1012, "idMal": null, "popularity": 100,
+              "title": {"romaji": "No Genres Anime", "english": null},
+              "format": "TV", "status": "FINISHED",
+              "episodes": 0, "duration": 24,
+              "startDate": {"year": 2020, "month": 1, "day": 1},
+              "studios": {"edges": []},
+              "genres": null,
+              "airingSchedule": {"nodes": []},
+              "relations": {"edges": []}
+            }
+          }
+        }
+        """;
+    var media = parseMedia(json);
+
+    Anime savedAnime = buildSavedAnime(1L, "No Genres Anime");
+    Season savedSeason = buildSavedSeason(1L);
+
+    when(animeRepository.findByExternalId(1012L)).thenReturn(Optional.empty());
+    when(genreRepository.findAll()).thenReturn(List.of());
+    when(animeRepository.save(any())).thenReturn(savedAnime);
+    when(seasonRepository.findByExternalId(1012L)).thenReturn(Optional.empty());
+    when(seasonRepository.save(any())).thenReturn(savedSeason);
+
+    Anime result = service.saveFranchise(List.of(media), 0, false);
+
+    assertThat(result).isNotNull();
+    verify(genreRepository, never()).save(any());
+    verify(episodeRepository, never()).saveAll(any());
+  }
+
+
   @Test
   @DisplayName("processFranchise - возвращает null")
   void processFranchise_returns_null(){
@@ -1099,3 +1640,4 @@ class AnimeImportServiceExtendedTest {
     return s;
   }
 }
+
