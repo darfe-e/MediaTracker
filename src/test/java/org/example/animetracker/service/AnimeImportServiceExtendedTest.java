@@ -3,18 +3,19 @@ package org.example.animetracker.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.example.animetracker.cache.AnimeSearchCache;
+import org.example.animetracker.dto.external.*;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.model.Season;
 import org.example.animetracker.repository.AnimeRepository;
@@ -30,6 +31,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -1691,6 +1693,121 @@ class AnimeImportServiceExtendedTest {
     boolean result = (boolean) method.invoke(service, (Object) null);
 
     assertThat(result).isFalse();
+  }
+
+  @Test
+  @DisplayName("processFranchise - startNode == null")
+  void processFranchise_startNode_is_null (){
+    AnilistMedia startNode = null;
+
+    Anime result = service.processFranchise(startNode);
+    assertThat(result).isNull();
+  }
+
+  @Test
+  @DisplayName("collectFullChain — должен прерваться на 60 итерациях (safety limit)")
+  void collectFullChain_reachesSafetyLimit() throws Exception {
+    AnilistMedia startNode = new AnilistMedia();
+    startNode.setId(1L);
+
+    AnilistRelationEdge initialEdge = new AnilistRelationEdge();
+    AnilistMedia linkedMedia = new AnilistMedia();
+    linkedMedia.setId(2L);
+    initialEdge.setNode(linkedMedia);
+    initialEdge.setRelationType("SEQUEL"); // Тип, который проходит фильтрацию
+
+    AnilistRelations initialRelations = new AnilistRelations();
+    initialRelations.setEdges(List.of(initialEdge));
+    startNode.setRelations(initialRelations);
+
+    AnimeImportService spyService = Mockito.spy(service);
+
+    java.util.concurrent.atomic.AtomicLong idGenerator = new java.util.concurrent.atomic.AtomicLong(3);
+
+    Mockito.lenient().doAnswer(invocation -> {
+      Long requestedId = invocation.getArgument(0);
+      AnilistMedia m = new AnilistMedia();
+      m.setId(requestedId);
+
+      AnilistRelationEdge nextEdge = new AnilistRelationEdge();
+      AnilistMedia nextMedia = new AnilistMedia();
+      nextMedia.setId(idGenerator.getAndIncrement());
+      nextEdge.setNode(nextMedia);
+      nextEdge.setRelationType("SEQUEL");
+
+      AnilistRelations nextRels = new AnilistRelations();
+      nextRels.setEdges(List.of(nextEdge));
+      m.setRelations(nextRels);
+
+      return m;
+    }).when(spyService).fetchAnilistByIdWithRetry(anyLong());
+
+    var method = AnimeImportService.class.getDeclaredMethod("collectFullChain",
+        org.example.animetracker.dto.external.AnilistMedia.class);
+    method.setAccessible(true);
+
+    List<AnilistMedia> result = (List<AnilistMedia>) method.invoke(spyService, startNode);
+
+    assertThat(result).isNotNull();
+    verify(spyService, times(60)).fetchAnilistByIdWithRetry(anyLong());
+  }
+
+  @Test
+  @DisplayName("fetchJikanPage — когда title null, берет title_romanji")
+  void fetchJikanPage_usesRomajiWhenTitleIsNull() throws Exception {
+    String json = """
+            {
+              "pagination": {"has_next_page": false},
+              "data": [
+                {
+                  "mal_id": 10,
+                  "title": null,
+                  "title_romanji": "Romaji Title"
+                }
+              ]
+            }
+            """;
+
+    ResponseEntity<String> response = ResponseEntity.ok(json);
+    when(restTemplate.getForEntity(anyString(), eq(String.class))).thenReturn(response);
+
+    Map<Integer, String> titles = new HashMap<>();
+
+    var method = AnimeImportService.class.getDeclaredMethod("fetchJikanPage",
+        Integer.class, int.class, Map.class);
+    method.setAccessible(true);
+
+    boolean hasNext = (boolean) method.invoke(service, 123, 1, titles);
+
+    assertThat(titles).containsEntry(10, "Romaji Title");
+    assertThat(hasNext).isFalse();
+  }
+
+  @Test
+  @DisplayName("fillAnimeInfo — устанавливает студию, если edge и node не null")
+  void fillAnimeInfo_setsStudioWhenEdgeAndNodeArePresent() throws Exception {
+    Anime anime = new Anime();
+    AnilistMedia root = new AnilistMedia();
+    root.setTitle(new AnilistTitle());
+
+    AnilistStudio studio = new AnilistStudio();
+    studio.setName("MAPPA");
+
+    AnilistStudioEdge edge = new AnilistStudioEdge();
+    edge.setNode(studio);
+
+    AnilistStudios studiosContainer = new AnilistStudios();
+    studiosContainer.setEdges(List.of(edge));
+
+    root.setStudios(studiosContainer);
+
+    var method = AnimeImportService.class.getDeclaredMethod("fillAnimeInfo",
+        Anime.class, AnilistMedia.class, long.class, Map.class, boolean.class);
+    method.setAccessible(true);
+
+    method.invoke(service, anime, root, 1L, new HashMap<>(), true);
+
+    assertThat(anime.getStudio()).isEqualTo("MAPPA");
   }
 
   // ─── helpers ────────────────────────────────────────────────────────────────

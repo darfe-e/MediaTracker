@@ -361,7 +361,7 @@ public class AnimeImportService {
     return root.path("pagination").path("has_next_page").asBoolean(false);
   }
 
-  private AnilistMedia fetchAnilistByIdWithRetry(Long id) {
+  protected AnilistMedia fetchAnilistByIdWithRetry(Long id) {
     String query = String.format("{ Media(id: %d, type: ANIME) { %s } }", id, MEDIA_FIELDS);
     for (int attempt = 1; attempt <= 3; attempt++) {
       try {
