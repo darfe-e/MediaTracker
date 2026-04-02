@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
@@ -1872,22 +1874,123 @@ class AnimeImportServiceExtendedTest {
 
   static Stream<Arguments> provideJikanScenarios() {
     return Stream.of(
-        // Ветка 1: Успешный 'else if' (основной title пуст, берем title_romanji)
         Arguments.of("Успех: title пуст, берем title_romanji",
             "{\"data\": [{\"mal_id\": 10, \"title\": null, \"title_romanji\": \"Romaji\"}], \"pagination\":{}}", 1),
 
-        // Ветка 2: epNum <= 0 (первое условие в else if ложно)
         Arguments.of("Провал: epNum <= 0",
             "{\"data\": [{\"mal_id\": 0, \"title\": null, \"title_romanji\": \"Valid\"}], \"pagination\":{}}", 0),
 
-        // Ветка 3: titleEn == null (второе условие в else if ложно)
         Arguments.of("Провал: title_romanji отсутствует (null)",
             "{\"data\": [{\"mal_id\": 11, \"title\": \"\", \"title_romanji\": null}], \"pagination\":{}}", 0),
 
-        // Ветка 4: titleEn.isBlank() (третье условие в else if ложно)
         Arguments.of("Провал: title_romanji только из пробелов",
             "{\"data\": [{\"mal_id\": 12, \"title\": null, \"title_romanji\": \"   \"}], \"pagination\":{}}", 0)
     );
+  }
+
+  @ParameterizedTest(name = "isSequelOrPrequel: {0} -> {1}")
+  @CsvSource({
+      ", false",             // null case
+      "SEQUEL, true",
+      "prequel, true",       // case-insensitive check
+      "SIDE_STORY, false",
+      "OTHER, false"
+  })
+  void isSequelOrPrequel_coverage(String type, boolean expected) throws Exception {
+    var method = AnimeImportService.class.getDeclaredMethod("isSequelOrPrequel", String.class);
+    method.setAccessible(true);
+
+    boolean result = (boolean) method.invoke(service, type);
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  @DisplayName("Schedule methods — coverage for null schedules and nodes")
+  void scheduleMethods_nullCoverage() throws Exception {
+    AnilistMedia media = new AnilistMedia();
+    media.setAiringSchedule(null); // Case 1: airingSchedule is null
+
+    var maxMethod = AnimeImportService.class.getDeclaredMethod("maxEpisodeFromSchedule", AnilistMedia.class);
+    var mapMethod = AnimeImportService.class.getDeclaredMethod("buildAirDateMap", AnilistMedia.class);
+    maxMethod.setAccessible(true);
+    mapMethod.setAccessible(true);
+
+    assertThat((int) maxMethod.invoke(service, media)).isZero();
+    assertThat((Map<?, ?>) mapMethod.invoke(service, media)).isEmpty();
+
+    // Case 2: nodes is null
+    AnilistAiringSchedule schedule = new AnilistAiringSchedule();
+    schedule.setNodes(null);
+    media.setAiringSchedule(schedule);
+
+    assertThat((int) maxMethod.invoke(service, media)).isZero();
+    assertThat((Map<?, ?>) mapMethod.invoke(service, media)).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Schedule methods — coverage for null values inside nodes")
+  void scheduleMethods_internalNullCoverage() throws Exception {
+    AnilistMedia media = new AnilistMedia();
+    AnilistAiringSchedule schedule = new AnilistAiringSchedule();
+
+    // Нода с null эпизодом или временем
+    AnilistAiringScheduleNode badNode = new AnilistAiringScheduleNode();
+    badNode.setEpisode(null);
+    badNode.setAiringAt(null);
+
+    // Валидная нода
+    AnilistAiringScheduleNode goodNode = new AnilistAiringScheduleNode();
+    goodNode.setEpisode(12);
+    goodNode.setAiringAt(1712000000L); // Some timestamp
+
+    schedule.setNodes(Arrays.asList(badNode, goodNode));
+    media.setAiringSchedule(schedule);
+
+    var maxMethod = AnimeImportService.class.getDeclaredMethod("maxEpisodeFromSchedule", AnilistMedia.class);
+    var mapMethod = AnimeImportService.class.getDeclaredMethod("buildAirDateMap", AnilistMedia.class);
+    maxMethod.setAccessible(true);
+    mapMethod.setAccessible(true);
+
+    // maxEpisode должен отфильтровать badNode и вернуть 12
+    assertThat((int) maxMethod.invoke(service, media)).isEqualTo(12);
+
+    Map<Integer, LocalDate> resultUpdate = (Map<Integer, LocalDate>) mapMethod.invoke(service, media);
+    assertThat(resultUpdate).hasSize(1).containsKey(12);
+  }
+
+  @Test
+  @DisplayName("getStartDate — full coverage for ternary operators and nulls")
+  void getStartDate_fullCoverage() throws Exception {
+    var method = AnimeImportService.class.getDeclaredMethod("getStartDate", AnilistMedia.class);
+    method.setAccessible(true);
+
+    // 1. Media is null
+    assertThat(method.invoke(service, (Object) null)).isNull();
+
+    // 2. StartDate object is null
+    AnilistMedia media = new AnilistMedia();
+    media.setStartDate(null);
+    assertThat(method.invoke(service, media)).isNull();
+
+    // 3. Year is null
+    AnilistDate dateDto = new AnilistDate();
+    dateDto.setYear(null);
+    media.setStartDate(dateDto);
+    assertThat(method.invoke(service, media)).isNull();
+
+    // 4. Month and Day are null (Coverage for ternary: month != null ? month : 1)
+    dateDto.setYear(2024);
+    dateDto.setMonth(null);
+    dateDto.setDay(null);
+
+    LocalDate result = (LocalDate) method.invoke(service, media);
+    assertThat(result).isEqualTo(LocalDate.of(2024, 1, 1));
+
+    // 5. Month and Day are present
+    dateDto.setMonth(5);
+    dateDto.setDay(20);
+    result = (LocalDate) method.invoke(service, media);
+    assertThat(result).isEqualTo(LocalDate.of(2024, 5, 20));
   }
 
   // ─── helpers ────────────────────────────────────────────────────────────────
