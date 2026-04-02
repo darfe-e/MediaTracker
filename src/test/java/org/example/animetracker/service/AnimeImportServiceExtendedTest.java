@@ -7,10 +7,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -1808,6 +1805,89 @@ class AnimeImportServiceExtendedTest {
     method.invoke(service, anime, root, 1L, new HashMap<>(), true);
 
     assertThat(anime.getStudio()).isEqualTo("MAPPA");
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("provideStudioScenarios")
+  void fillAnimeInfo_studioCoverage(String description, List<AnilistStudioEdge> edges, String expectedStudio) throws Exception {
+    // Подготовка
+    Anime anime = new Anime();
+    AnilistMedia root = new AnilistMedia();
+    root.setTitle(new AnilistTitle());
+
+    if (edges != null) {
+      AnilistStudios studios = new AnilistStudios();
+      studios.setEdges(edges);
+      root.setStudios(studios);
+    }
+
+    // Вызов через рефлексию
+    var method = AnimeImportService.class.getDeclaredMethod("fillAnimeInfo",
+        Anime.class, AnilistMedia.class, long.class, Map.class, boolean.class);
+    method.setAccessible(true);
+
+    method.invoke(service, anime, root, 1L, new HashMap<>(), true);
+
+    // Проверка
+    assertThat(anime.getStudio()).isEqualTo(expectedStudio);
+  }
+
+  static Stream<Arguments> provideStudioScenarios() {
+    // 1. Успешный сценарий (edge != null && node != null)
+    AnilistStudio studio = new AnilistStudio();
+    studio.setName("MAPPA");
+    AnilistStudioEdge validEdge = new AnilistStudioEdge();
+    validEdge.setNode(studio);
+
+    // 2. Сценарий: node == null
+    AnilistStudioEdge edgeWithNullNode = new AnilistStudioEdge();
+    edgeWithNullNode.setNode(null);
+
+    return Stream.of(
+        Arguments.of("Все данные заполнены -> Студия установлена", List.of(validEdge), "MAPPA"),
+        Arguments.of("В списке есть null (edge == null) -> Студия не установлена", Collections.singletonList(null), null),
+        Arguments.of("Edge существует, но Node внутри null -> Студия не установлена", List.of(edgeWithNullNode), null)
+    );
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("provideJikanScenarios")
+  void fetchJikanPage_fullCoverage(String description, String json, int expectedSize) throws Exception {
+    // Мокаем ответ от Jikan API
+    ResponseEntity<String> response = ResponseEntity.ok(json);
+    when(restTemplate.getForEntity(anyString(), eq(String.class))).thenReturn(response);
+
+    Map<Integer, String> titles = new HashMap<>();
+
+    // ВАЖНО: Соблюдайте порядок аргументов здесь и в invoke
+    var method = AnimeImportService.class.getDeclaredMethod("fetchJikanPage",
+        Integer.class, int.class, Map.class);
+    method.setAccessible(true);
+
+    method.invoke(service, 123, 1, titles);
+
+    // Проверяем, сколько названий попало в мапу
+    assertThat(titles).hasSize(expectedSize);
+  }
+
+  static Stream<Arguments> provideJikanScenarios() {
+    return Stream.of(
+        // Ветка 1: Успешный 'else if' (основной title пуст, берем title_romanji)
+        Arguments.of("Успех: title пуст, берем title_romanji",
+            "{\"data\": [{\"mal_id\": 10, \"title\": null, \"title_romanji\": \"Romaji\"}], \"pagination\":{}}", 1),
+
+        // Ветка 2: epNum <= 0 (первое условие в else if ложно)
+        Arguments.of("Провал: epNum <= 0",
+            "{\"data\": [{\"mal_id\": 0, \"title\": null, \"title_romanji\": \"Valid\"}], \"pagination\":{}}", 0),
+
+        // Ветка 3: titleEn == null (второе условие в else if ложно)
+        Arguments.of("Провал: title_romanji отсутствует (null)",
+            "{\"data\": [{\"mal_id\": 11, \"title\": \"\", \"title_romanji\": null}], \"pagination\":{}}", 0),
+
+        // Ветка 4: titleEn.isBlank() (третье условие в else if ложно)
+        Arguments.of("Провал: title_romanji только из пробелов",
+            "{\"data\": [{\"mal_id\": 12, \"title\": null, \"title_romanji\": \"   \"}], \"pagination\":{}}", 0)
+    );
   }
 
   // ─── helpers ────────────────────────────────────────────────────────────────
