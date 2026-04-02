@@ -2030,6 +2030,47 @@ class AnimeImportServiceExtendedTest {
         .doesNotContainKey(2); // Проверяем, что нода с null временем не прошла
   }
 
+  @ParameterizedTest(name = "isAcceptableFormat: {0} -> {1}")
+  @MethodSource("provideFormatScenarios")
+  void isAcceptableFormat_fullCoverage(String format, boolean expected) throws Exception {
+    // Подготовка объекта
+    AnilistMedia media = null;
+    if (!"MEDIA_NULL".equals(format)) {
+      media = new AnilistMedia();
+      if (!"FORMAT_NULL".equals(format)) {
+        media.setFormat(format);
+      }
+    }
+
+    // Вызов приватного метода через рефлексию
+    var method = AnimeImportService.class.getDeclaredMethod("isAcceptableFormat", AnilistMedia.class);
+    method.setAccessible(true);
+
+    boolean result = (boolean) method.invoke(service, media);
+
+    // Проверка
+    assertThat(result).isEqualTo(expected);
+  }
+
+  static Stream<Arguments> provideFormatScenarios() {
+    return Stream.of(
+        // Нулевые проверки (покрывают начальный if)
+        Arguments.of("MEDIA_NULL", false),
+        Arguments.of("FORMAT_NULL", false),
+
+        Arguments.of("TV", true),
+        Arguments.of("TV_SHORT", true), // Добавлено: 0 -> 1 хит
+        Arguments.of("OVA", true),
+        Arguments.of("ONA", true),      // Добавлено: 0 -> 1 хит
+        Arguments.of("MOVIE", true),
+        Arguments.of("SPECIAL", true),
+
+        // Покрытие ветки default
+        Arguments.of("MANGA", false),   // Любое значение не из списка
+        Arguments.of("MUSIC", false)
+    );
+  }
+
   // ─── helpers ────────────────────────────────────────────────────────────────
 
   private org.example.animetracker.dto.external.AnilistMedia parseMedia(String json)
