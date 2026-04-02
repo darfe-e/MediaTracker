@@ -1993,6 +1993,43 @@ class AnimeImportServiceExtendedTest {
     assertThat(result).isEqualTo(LocalDate.of(2024, 5, 20));
   }
 
+  @Test
+  @DisplayName("buildAirDateMap — полное покрытие условий (комбинации null)")
+  void buildAirDateMap_fullConditionCoverage() throws Exception {
+    AnilistMedia media = new AnilistMedia();
+    AnilistAiringSchedule schedule = new AnilistAiringSchedule();
+
+    AnilistAiringScheduleNode validNode = new AnilistAiringScheduleNode();
+    validNode.setEpisode(1);
+    validNode.setAiringAt(1712000000L);
+
+    AnilistAiringScheduleNode nullEpisodeNode = new AnilistAiringScheduleNode();
+    nullEpisodeNode.setEpisode(null);
+    nullEpisodeNode.setAiringAt(1712000000L);
+
+    AnilistAiringScheduleNode nullAiringAtNode = new AnilistAiringScheduleNode();
+    nullAiringAtNode.setEpisode(2);
+    nullAiringAtNode.setAiringAt(null);
+
+    AnilistAiringScheduleNode doubleNullNode = new AnilistAiringScheduleNode();
+    doubleNullNode.setEpisode(null);
+    doubleNullNode.setAiringAt(null);
+
+    schedule.setNodes(Arrays.asList(validNode, nullEpisodeNode, nullAiringAtNode, doubleNullNode));
+    media.setAiringSchedule(schedule);
+
+    var mapMethod = AnimeImportService.class.getDeclaredMethod("buildAirDateMap", AnilistMedia.class);
+    mapMethod.setAccessible(true);
+
+    @SuppressWarnings("unchecked")
+    Map<Integer, LocalDate> result = (Map<Integer, LocalDate>) mapMethod.invoke(service, media);
+
+    assertThat(result)
+        .hasSize(1)
+        .containsKey(1)
+        .doesNotContainKey(2); // Проверяем, что нода с null временем не прошла
+  }
+
   // ─── helpers ────────────────────────────────────────────────────────────────
 
   private org.example.animetracker.dto.external.AnilistMedia parseMedia(String json)
