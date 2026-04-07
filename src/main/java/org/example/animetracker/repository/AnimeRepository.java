@@ -1,5 +1,6 @@
 package org.example.animetracker.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.example.animetracker.model.Anime;
@@ -50,5 +51,33 @@ public interface AnimeRepository extends JpaRepository<Anime, Long> {
   Page<Anime> findByGenreAndMinSeasonsNative(@Param("genre") String genre,
                                              @Param("minSeasons") int minSeasons,
                                              Pageable pageable);
+
+  /**
+   * Возвращает список всех external_id из БД.
+   * Используется в scheduledRefresh() для обновления каждого известного аниме.
+   */
+  @Query("SELECT a.externalId FROM Anime a WHERE a.externalId IS NOT NULL")
+  List<Long> findAllExternalIds();
+
+  /**
+   * Поиск по названию (без учёта регистра, частичное совпадение).
+   * Используется в AnimeController.searchAnime для проверки наличия в БД.
+   */
+  Optional<Anime> findByTitleIgnoreCase(String title);
+
+  // Онгоинги по флагу
+  @Query("SELECT a.externalId FROM Anime a "
+      + "WHERE a.isOngoing = :ongoing AND a.externalId IS NOT NULL")
+  List<Long> findExternalIdsByIsOngoing(@Param("ongoing") boolean ongoing);
+
+  // Завершённые, которые давно не обновлялись
+  @Query("""
+            SELECT a.externalId FROM Anime a
+            WHERE a.isOngoing = false
+              AND a.externalId IS NOT NULL
+              AND (a.lastUpdated IS NULL OR a.lastUpdated < :threshold)
+            """)
+  List<Long> findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(
+      @Param("threshold") LocalDateTime threshold);
 
 }

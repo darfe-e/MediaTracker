@@ -197,7 +197,7 @@ class AnimeServiceTest {
   void findByGenreAndMinSeasons_cacheHit_skipRepository() {
     Pageable pageable = PageRequest.of(0, 5);
     AnimeSearchKey key = new AnimeSearchKey("Action", 1, 0, 5, pageable.getSort());
-    Page<AnimeDto> cached = new PageImpl<>(List.of(new AnimeDto(1L, "Solo Leveling", 1, "A-1", true)));
+    Page<AnimeDto> cached = new PageImpl<>(List.of(new AnimeDto(1L, "Solo Leveling", 1, "A-1", true, true)));
 
     when(searchCache.get(key)).thenReturn(cached);
 
@@ -228,7 +228,7 @@ class AnimeServiceTest {
   void findByGenreAndMinSeasonsNative_cacheHit_skipRepository() {
     Pageable pageable = PageRequest.of(0, 5);
     AnimeSearchKey key = new AnimeSearchKey("Fantasy", 3, 0, 5, pageable.getSort());
-    Page<AnimeDto> cached = new PageImpl<>(List.of(new AnimeDto(1L, "Solo Leveling", 1, "A-1", true)));
+    Page<AnimeDto> cached = new PageImpl<>(List.of(new AnimeDto(1L, "Solo Leveling", 1, "A-1", true, true)));
 
     when(searchCache.get(key)).thenReturn(cached);
 
@@ -260,5 +260,33 @@ class AnimeServiceTest {
     anime.setId(id);
     anime.setTitle("Anime #" + id);
     return anime;
+  }
+
+  @Test
+  @DisplayName("findByTitle — делегирует вызов в репозиторий и возвращает Optional<Anime>")
+  void findByTitle_returnsOptionalAnime() {
+    Anime expectedAnime = new Anime();
+    expectedAnime.setTitle("Jujutsu Kaisen");
+
+    when(animeRepository.findByTitleIgnoreCase("Jujutsu Kaisen"))
+        .thenReturn(Optional.of(expectedAnime));
+
+    Optional<Anime> result = animeService.findByTitle("Jujutsu Kaisen");
+
+    assertThat(result).isPresent();
+    assertThat(result.get().getTitle()).isEqualTo("Jujutsu Kaisen");
+    verify(animeRepository).findByTitleIgnoreCase("Jujutsu Kaisen");
+  }
+
+  @Test
+  @DisplayName("findByTitle — возвращает empty, если аниме не найдено")
+  void findByTitle_returnsEmptyWhenNotFound() {
+    when(animeRepository.findByTitleIgnoreCase("Unknown Anime"))
+        .thenReturn(Optional.empty());
+
+    Optional<Anime> result = animeService.findByTitle("Unknown Anime");
+
+    assertThat(result).isEmpty();
+    verify(animeRepository).findByTitleIgnoreCase("Unknown Anime");
   }
 }

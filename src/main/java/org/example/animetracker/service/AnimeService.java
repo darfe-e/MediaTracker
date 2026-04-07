@@ -1,6 +1,8 @@
 package org.example.animetracker.service;
 
 import java.util.List;
+import java.util.Optional;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.animetracker.cache.AnimeSearchCache;
@@ -110,5 +112,9 @@ public class AnimeService {
     Page<AnimeDto> result = animePage.map(AnimeMapper::animeToDto);
     searchCache.put(key, result);
     return result;
+  }
+
+  public Optional<Anime> findByTitle(String title) {
+    return animeRepository.findByTitleIgnoreCase(title);
   }
 }

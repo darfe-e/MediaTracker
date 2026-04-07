@@ -10,12 +10,19 @@ import org.example.animetracker.model.Anime;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AnimeMapper {
+
   public static AnimeDto animeToDto(Anime anime) {
     if (anime == null) {
       return null;
     }
-    return new AnimeDto(anime.getId(), anime.getTitle(), anime.getNumOfReleasedSeasons(),
-        anime.getStudio(), anime.getIsOngoing());
+    return new AnimeDto(
+        anime.getId(),
+        anime.getTitle(),
+        anime.getNumOfReleasedSeasons(),
+        anime.getStudio(),
+        anime.getIsOngoing(),
+        anime.getIsAnnounced()
+    );
   }
 
   public static AnimeDetailedDto animeToDetailedDto(Anime anime) {
@@ -30,8 +37,8 @@ public class AnimeMapper {
         new ArrayList<>(new HashSet<>(anime.getSeasons())).stream()
             .map(SeasonMapper::seasonToDto)
             .toList(),
-        anime.getIsOngoing()
+        anime.getIsOngoing(),
+        anime.getIsAnnounced()
     );
   }
 }
-

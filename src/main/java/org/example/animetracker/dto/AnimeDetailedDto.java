@@ -13,4 +13,5 @@ public class AnimeDetailedDto {
   private String studio;
   private List<SeasonDto> seasons;
   private Boolean isOngoing;
+  private Boolean isAnnounced;
 }

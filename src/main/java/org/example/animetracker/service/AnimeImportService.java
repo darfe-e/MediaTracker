@@ -1,7 +1,10 @@
 package org.example.animetracker.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -18,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.example.animetracker.cache.AnimeSearchCache;
@@ -25,10 +29,12 @@ import org.example.animetracker.dto.external.AnilistAiringScheduleNode;
 import org.example.animetracker.dto.external.AnilistMedia;
 import org.example.animetracker.dto.external.AnilistRelationEdge;
 import org.example.animetracker.dto.external.AnilistStudioEdge;
+import org.example.animetracker.exception.AnimeImportException;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.model.Episode;
 import org.example.animetracker.model.Genre;
 import org.example.animetracker.model.Season;
+import org.example.animetracker.model.ImportTask;
 import org.example.animetracker.repository.AnimeRepository;
 import org.example.animetracker.repository.EpisodeRepository;
 import org.example.animetracker.repository.GenreRepository;
@@ -39,6 +45,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -76,6 +84,8 @@ public class AnimeImportService {
             """;
 
   private final AnimeImportService self;
+
+  private static final String NOT_YET_RELEASED = "NOT_YET_RELEASED";
 
   public AnimeImportService(
       AnimeRepository animeRepository,
@@ -155,33 +165,46 @@ public class AnimeImportService {
         startNode.getTitle().getRomaji(), startNode.getId(), startNode.getIdMal());
 
     List<AnilistMedia> allMedia = collectFullChain(startNode);
-
     if (allMedia.isEmpty()) {
       log.warn("Не найдено подходящего медиа для: {}", startNode.getTitle().getRomaji());
       return null;
     }
 
-    allMedia.sort(Comparator.comparing(
-        this::getStartDate,
+    allMedia.sort(Comparator.comparing(this::getStartDate,
         Comparator.nullsLast(Comparator.naturalOrder())));
 
-    boolean isOngoing = allMedia.stream().anyMatch(this::isReleasingOrUpcoming);
+    boolean isOngoing = allMedia.stream()
+        .filter(this::isTvFormat)
+        .anyMatch(m -> {
+          if ("RELEASING".equalsIgnoreCase(m.getStatus())) {
+            return true;
+          }
+          if (NOT_YET_RELEASED.equalsIgnoreCase(m.getStatus())) {
+            if (getStartDate(m) != null) {
+              return true;
+            }
+            return m.getEpisodes() != null && m.getEpisodes() > 0;
+          }
+          return false;
+        });
+
+    boolean isAnnounced = allMedia.stream().anyMatch(this::isReleasingOrUpcoming);
 
     long tvCount = allMedia.stream()
         .filter(this::isTvFormat)
-        .filter(m -> !"NOT_YET_RELEASED".equalsIgnoreCase(m.getStatus()))
+        .filter(m -> !NOT_YET_RELEASED.equalsIgnoreCase(m.getStatus()))
         .count();
 
-    log.info("  Медиа: {} | TV-сезонов: {} | Онгоинг: {}",
-        allMedia.size(), tvCount, isOngoing);
+    log.info("  Медиа: {} | TV-сезонов: {} | Онгоинг: {} | Анонс: {}",
+        allMedia.size(), tvCount, isOngoing, isAnnounced);
     allMedia.forEach(m -> log.info("    [{}] {} | {} | {} эп | mal={}",
         m.getFormat(), m.getTitle().getRomaji(),
         m.getStatus(), m.getEpisodes(), m.getIdMal()));
 
-    return self.saveFranchise(allMedia, (int) tvCount, isOngoing);
+    return self.saveFranchise(allMedia, (int) tvCount, isOngoing, isAnnounced);
   }
 
-  private List<AnilistMedia> collectFullChain(AnilistMedia start) {
+  List<AnilistMedia> collectFullChain(AnilistMedia start) {
     Set<Long> visited    = new HashSet<>();
     Deque<Long> toFetch  = new ArrayDeque<>();
     Map<Long, AnilistMedia> result = new LinkedHashMap<>();
@@ -231,19 +254,19 @@ public class AnimeImportService {
   }
 
   @Transactional
-  protected Anime saveFranchise(List<AnilistMedia> allMedia, int tvCount, boolean isOngoing) {
+  protected Anime saveFranchise(List<AnilistMedia> allMedia, int tvCount,
+                                boolean isOngoing, boolean isAnnounced) {
     AnilistMedia root = allMedia.stream()
         .filter(this::isTvFormat)
         .findFirst()
         .orElse(allMedia.get(0));
 
-    Anime anime = animeRepository.findByExternalId(root.getId())
-        .orElse(new Anime());
+    Anime anime = animeRepository.findByExternalId(root.getId()).orElse(new Anime());
 
     Map<String, Genre> genreCache = genreRepository.findAll().stream()
         .collect(Collectors.toMap(Genre::getName, g -> g, (a, b) -> a));
 
-    fillAnimeInfo(anime, root, tvCount, genreCache, isOngoing);
+    fillAnimeInfo(anime, root, tvCount, genreCache, isOngoing, isAnnounced);
     anime = animeRepository.save(anime);
 
     for (AnilistMedia media : allMedia) {
@@ -251,7 +274,8 @@ public class AnimeImportService {
     }
 
     searchCache.invalidateAll();
-    log.info("ok '{}' | TV: {} | Онгоинг: {}", anime.getTitle(), tvCount, isOngoing);
+    log.info("ok '{}' | TV: {} | Онгоинг: {} | Анонс: {}",
+        anime.getTitle(), tvCount, isOngoing, isAnnounced);
     return anime;
   }
 
@@ -420,7 +444,8 @@ public class AnimeImportService {
   }
 
   private void fillAnimeInfo(Anime anime, AnilistMedia root, long tvCount,
-                             Map<String, Genre> genreCache, boolean isOngoing) {
+                             Map<String, Genre> genreCache,
+                             boolean isOngoing, boolean isAnnounced) {
     String title = (root.getTitle().getEnglish() != null
         && !root.getTitle().getEnglish().isBlank())
         ? root.getTitle().getEnglish()
@@ -432,6 +457,7 @@ public class AnimeImportService {
     anime.setPopularityRank(root.getPopularity());
     anime.setLastUpdated(LocalDateTime.now());
     anime.setIsOngoing(isOngoing);
+    anime.setIsAnnounced(isAnnounced);    // НОВОЕ
     anime.setDuration(root.getDuration());
 
     if (root.getStudios() != null && root.getStudios().getEdges() != null
@@ -492,7 +518,7 @@ public class AnimeImportService {
       return false;
     }
     String s = m.getStatus().toUpperCase();
-    return "RELEASING".equals(s) || "NOT_YET_RELEASED".equals(s);
+    return "RELEASING".equals(s) || NOT_YET_RELEASED.equals(s);
   }
 
   private boolean hasEpisodes(AnilistMedia m) {
@@ -540,5 +566,118 @@ public class AnimeImportService {
         m.getStartDate().getYear(),
         m.getStartDate().getMonth() != null ? m.getStartDate().getMonth() : 1,
         m.getStartDate().getDay() != null ? m.getStartDate().getDay() : 1);
+  }
+
+  public void refreshPopularAnimeWithProgress(int limit, ImportTask task) throws Exception {
+    log.info("Старт импорта топ-{} аниме (task={})", limit, task.getId());
+
+    String query = String.format(
+        "{ Page(page: 1, perPage: %d) { media(sort: POPULARITY_DESC, type: ANIME) { %s } } }",
+        limit, MEDIA_FIELDS);
+
+    try {
+      JsonNode mediaList = fetchMediaList(query);
+      task.setTotalCount(mediaList.size());
+
+      processMediaNodes(mediaList, task);
+
+    } catch (IOException e) {
+      log.error("Ошибка при запросе или парсинге данных Anilist: {}", e.getMessage());
+      throw new AnimeImportException("Failed to fetch or parse anime list", e);
+    }
+
+    log.info("Импорт завершён (task={})", task.getId());
+  }
+
+  private JsonNode fetchMediaList(String query) throws Exception {
+    JsonNode response = executeAnilistQuery(query);
+    JsonNode mediaList = response.path("data").path("Page").path("media");
+
+    if (!mediaList.isArray()) {
+      throw new IOException("API response is not an array as expected");
+    }
+    return mediaList;
+  }
+
+  private void processMediaNodes(JsonNode mediaList, ImportTask task) {
+    for (JsonNode node : mediaList) {
+      processSingleMedia(node, task);
+    }
+  }
+
+  private void processSingleMedia(JsonNode node, ImportTask task) {
+    try {
+      AnilistMedia media = objectMapper.treeToValue(node, AnilistMedia.class);
+      processFranchise(media);
+
+      task.setProcessedCount(task.getProcessedCount() + 1);
+
+      TimeUnit.MILLISECONDS.sleep(3000);
+
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      throw new AnimeImportException("Import process was interrupted", ie);
+    } catch (JsonProcessingException e) {
+      log.error("Ошибка маппинга JSON для узла: {}", e.getMessage());
+    } catch (Exception e) {
+      log.error("Непредвиденная ошибка при обработке франшизы: {}", e.getMessage(), e);
+    }
+  }
+
+  @Async("importExecutor")
+  @Scheduled(cron = "0 0 */6 * * *")
+  public void refreshOngoingAnime() {
+    log.info("=== Обновление онгоингов ===");
+
+    List<Long> ongoingIds = animeRepository.findExternalIdsByIsOngoing(true);
+    log.info("Онгоингов для обновления: {}", ongoingIds.size());
+
+    for (Long externalId : ongoingIds) {
+      try {
+        AnilistMedia media = fetchAnilistByIdWithRetry(externalId);
+        if (media != null) {
+          processFranchise(media);
+        }
+        Thread.sleep(3000);
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        log.warn("Обновление онгоингов прервано");
+        return;
+      } catch (Exception e) {
+        log.error("Ошибка обновления онгоинга externalId={}: {}", externalId, e.getMessage());
+      }
+    }
+
+    log.info("=== Обновление онгоингов завершено ({} аниме) ===", ongoingIds.size());
+  }
+
+  @Async("importExecutor")
+  @Scheduled(cron = "0 0 3 * * *")
+  public void refreshFinishedAnime() {
+    log.info("=== Обновление завершённых аниме ===");
+
+    LocalDateTime threshold = LocalDateTime.now().minusDays(30);
+    List<Long> staleIds = animeRepository
+        .findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(threshold);
+
+    log.info("Устаревших завершённых аниме: {}", staleIds.size());
+
+    for (Long externalId : staleIds) {
+      try {
+        AnilistMedia media = fetchAnilistByIdWithRetry(externalId);
+        if (media != null) {
+          processFranchise(media);
+        }
+        Thread.sleep(3000);
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        log.warn("Обновление завершённых аниме прервано");
+        return;
+      } catch (Exception e) {
+        log.error("Ошибка обновления externalId={}: {}", externalId, e.getMessage());
+      }
+    }
+
+    log.info("=== Обновление завершённых аниме завершено ({} аниме) ===", staleIds.size());
   }
 }

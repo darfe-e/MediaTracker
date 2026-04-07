@@ -1,6 +1,7 @@
 package org.example.animetracker;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.animetracker.model.ImportTask;
 import org.example.animetracker.repository.AnimeRepository;
 import org.example.animetracker.service.AnimeImportService;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +59,9 @@ class AnimeTrackerApplicationTest {
     runner.run();
 
     verify(animeRepository, atLeastOnce()).count();
-    verify(importService, times(1)).refreshPopularAnime(5);
+
+    verify(importService, times(1))
+        .refreshPopularAnimeWithProgress(eq(5), any(ImportTask.class));
   }
 
   @Test

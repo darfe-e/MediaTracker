@@ -57,7 +57,7 @@ class AnimeControllerTest {
   @DisplayName("GET /{id} — возвращает 200 OK")
   void getById_returnsOk() throws Exception {
     AnimeDetailedDto dto =
-        new AnimeDetailedDto(1L, "Naruto", 5, "Studio Pierrot", List.of(), true);
+        new AnimeDetailedDto(1L, "Naruto", 5, "Studio Pierrot", List.of(), true, true);
     when(animeService.findByIdWithoutProblem(1L)).thenReturn(dto);
 
     mockMvc.perform(get("/anime-catalogue/1"))
@@ -68,7 +68,7 @@ class AnimeControllerTest {
   @DisplayName("GET /?studio&title — возвращает 200 OK")
   void getByStudioAndTitle_withParams_returnsOk() throws Exception {
     when(animeService.findByStudioAndName(anyString(), anyString()))
-        .thenReturn(List.of(new AnimeDto(1L, "Naruto", 5, "Pierrot", true)));
+        .thenReturn(List.of(new AnimeDto(1L, "Naruto", 5, "Pierrot", true, true)));
 
     mockMvc.perform(get("/anime-catalogue")
             .param("studio", "Pierrot")

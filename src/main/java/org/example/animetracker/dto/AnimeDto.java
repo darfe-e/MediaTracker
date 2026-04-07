@@ -11,4 +11,5 @@ public class AnimeDto {
   private Integer numOfReleasedSeasons;
   private String studio;
   private Boolean isOngoing;
+  private Boolean isAnnounced;
 }

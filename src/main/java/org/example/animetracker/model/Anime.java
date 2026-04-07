@@ -43,6 +43,7 @@ public class Anime {
 
   private Integer popularityRank;
   private Boolean isOngoing;
+  private Boolean isAnnounced;
 
   @ManyToMany
   @JoinTable(
