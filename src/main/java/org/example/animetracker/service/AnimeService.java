@@ -1,8 +1,8 @@
 package org.example.animetracker.service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.animetracker.cache.AnimeSearchCache;
@@ -12,8 +12,10 @@ import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.mapper.AnimeMapper;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.repository.AnimeRepository;
+import org.example.animetracker.repository.specification.AnimeSpecification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,6 +75,24 @@ public class AnimeService {
     }
   }
 
+  public List<AnimeDto> findByStudio(String studio) {
+    if (studio != null) {
+      List<Anime> list = animeRepository.findByStudioContainingIgnoreCase(studio);
+      if (list.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+            "Anime not found with studio: " + studio);
+      }
+      return list.stream().map(AnimeMapper::animeToDto).toList();
+    } else {
+      List<Anime> list = animeRepository.findAll();
+      if (list.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+            "No anime found in catalogue");
+      }
+      return list.stream().map(AnimeMapper::animeToDto).toList();
+    }
+  }
+
   public Page<AnimeDto> getAllSortedByPopularity(Pageable pageable) {
     return animeRepository.findAllSorted(pageable)
         .map(AnimeMapper::animeToDto);
@@ -116,5 +136,27 @@ public class AnimeService {
 
   public Optional<Anime> findByTitle(String title) {
     return animeRepository.findByTitleIgnoreCase(title);
+  }
+
+  public Page<AnimeDto> findByFilters(
+      String studio, String genre, Integer minEpisodes,
+      Boolean isAiring, Pageable pageable) {
+
+    Specification<Anime> spec =
+        AnimeSpecification.buildFilter(studio, genre, minEpisodes, isAiring);
+
+    return animeRepository.findAll(spec, pageable)
+        .map(AnimeMapper::animeToDto);
+  }
+
+  public List<AnimeDto> searchByTitlePartial(String query) {
+    if (query == null || query.isBlank()) {
+      return Collections.emptyList();
+    }
+    return animeRepository
+        .findTop10ByTitleContainingIgnoreCaseOrderByPopularityRankDesc(query)
+        .stream()
+        .map(AnimeMapper::animeToDto)
+        .toList();
   }
 }

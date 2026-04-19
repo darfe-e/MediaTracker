@@ -17,6 +17,7 @@ import org.example.animetracker.repository.AnimeRepository;
 import org.example.animetracker.repository.FavoriteAnimeRepository;
 import org.example.animetracker.repository.UserRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -147,4 +148,22 @@ public class FavoriteAnimeService {
         .toList();
   }
 
+  @Transactional(readOnly = true)
+  public List<AnimeDto> searchInCollection(Long userId, String query) {
+    if (query == null || query.isBlank()) {
+      return Collections.emptyList();
+    }
+
+    String q = query.toLowerCase().trim();
+    Pageable all = PageRequest.of(0, 500);
+
+    return favoriteAnimeRepository
+        .findAnimeByUserIdSortedByAssessment(userId, all)
+        .stream()
+        .filter(anime -> anime.getTitle() != null
+            && anime.getTitle().toLowerCase().contains(q))
+        .limit(20)
+        .map(AnimeMapper::animeToDto)
+        .toList();
+  }
 }

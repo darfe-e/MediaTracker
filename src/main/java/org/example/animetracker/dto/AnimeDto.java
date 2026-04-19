@@ -12,4 +12,5 @@ public class AnimeDto {
   private String studio;
   private Boolean isOngoing;
   private Boolean isAnnounced;
+  private String posterUrl;
 }

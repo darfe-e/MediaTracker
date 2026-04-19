@@ -1,0 +1,12 @@
+.pagination {
+  display: flex; justify-content: center; align-items: center;
+  gap: 4px; margin-top: 40px; flex-wrap: wrap;
+}
+.pag-arrow { font-size: 18px; min-width: 36px; }
+.pag-num   { min-width: 36px; font-weight: 600; }
+.pag-gap   {
+  min-width: 36px; color: var(--text-muted);
+  font-size: 16px; letter-spacing: 1px;
+  cursor: pointer;
+}
+.pag-gap:hover { color: var(--accent-soft); }

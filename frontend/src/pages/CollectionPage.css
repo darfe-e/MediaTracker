@@ -1,0 +1,21 @@
+.coll-page { padding: 28px 32px 60px; max-width: 960px; margin: 0 auto; }
+
+.coll-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+}
+.coll-count { color: var(--text-muted); font-size: 14px; }
+
+.coll-modes { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.coll-error {
+  color: var(--accent-soft); background: rgba(230,48,48,0.1);
+  border-left: 3px solid var(--accent); padding: 10px 14px;
+  border-radius: 4px; margin-bottom: 16px; font-size: 14px;
+}
+.coll-list { display: flex; flex-direction: column; gap: 10px; }
+.coll-empty {
+  text-align: center; padding: 80px 20px;
+  color: var(--text-muted); font-size: 17px;
+}
+.pagination { display: flex; justify-content: center; gap: 6px; margin-top: 32px; flex-wrap: wrap; }

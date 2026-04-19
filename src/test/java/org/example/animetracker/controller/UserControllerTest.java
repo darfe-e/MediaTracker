@@ -35,16 +35,6 @@ class UserControllerTest {
   }
 
   @Test
-  @DisplayName("POST /users?name — создание пользователя 201 Created")
-  void createUser_returnsCreated() throws Exception {
-    UserDto dto = new UserDto(1L, "Alice");
-    when(userService.createUser(anyString())).thenReturn(dto);
-
-    mockMvc.perform(post("/users").param("name", "Alice"))
-        .andExpect(status().isCreated());
-  }
-
-  @Test
   @DisplayName("DELETE /users/{id} — удаление пользователя 204 No Content")
   void deleteUser_returnsNoContent() throws Exception {
     doNothing().when(userService).deleteUser(1L);

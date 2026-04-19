@@ -1,0 +1,38 @@
+.review-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.review-form__heading {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px; letter-spacing: 1.5px; color: var(--accent-soft);
+}
+.review-form__label {
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.6px;
+}
+.review-form__score-input { max-width: 100px; }
+.review-form__textarea { resize: vertical; min-height: 100px; }
+.review-form__counter { font-size: 11px; color: var(--text-muted); text-align: right; margin-top: -8px; }
+.review-form__error { color: var(--accent); font-size: 13px; }
+.review-form__actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.score-stars { display: flex; gap: 4px; }
+.star-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 22px; color: var(--surface2);
+  transition: var(--transition); padding: 0;
+  filter: drop-shadow(0 0 0 transparent);
+}
+.star-btn:hover, .star-btn--on {
+  color: var(--yellow);
+  filter: drop-shadow(0 0 6px rgba(245,158,11,0.5));
+}
+
+/* Убираем стрелки у number input */
+.review-form__score-input::-webkit-inner-spin-button,
+.review-form__score-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.review-form__score-input[type=number] { -moz-appearance: textfield; appearance: textfield; }

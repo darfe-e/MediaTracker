@@ -23,3 +23,10 @@ spring:
       org.example.animetracker: DEBUG
       org.springframework.web: WARN
       org.hibernate: ERROR
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+  server:
+    port: ${PORT:8080}

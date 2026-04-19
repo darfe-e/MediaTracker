@@ -28,10 +28,8 @@ public interface AnimeControllerApi {
   @ApiResponse(responseCode = "200", description = "Поиск выполнен успешно")
   @ApiResponse(responseCode = "404", description = "Аниме не найдены")
   @GetMapping
-  ResponseEntity<List<AnimeDto>> getByStudioAndTitle(
-      @Parameter(description = "Название студии") @RequestParam(required = false) String studio,
-      @Parameter(description = "Название аниме") @RequestParam(required = false) String title
-  );
+  ResponseEntity<List<AnimeDto>> getByStudio(
+      @Parameter(description = "Название студии") @RequestParam String studio);
 
   @Operation(summary = "Получить все аниме, отсортированные по популярности (с пагинацией)")
   @ApiResponse(responseCode = "200", description = "Список отсортирован")

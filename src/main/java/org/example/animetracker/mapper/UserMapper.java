@@ -11,6 +11,11 @@ public class UserMapper {
     if (user == null) {
       return null;
     }
-    return new UserDto(user.getId(), user.getName());
+    return new UserDto(
+        user.getId(),
+        user.getName(),
+        user.getAvatarPath(),
+        user.getTheme()
+    );
   }
 }

@@ -14,4 +14,5 @@ public class AnimeDetailedDto {
   private List<SeasonDto> seasons;
   private Boolean isOngoing;
   private Boolean isAnnounced;
+  private String posterUrl;
 }

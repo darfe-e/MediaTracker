@@ -6,13 +6,16 @@ import java.util.Optional;
 import org.example.animetracker.model.Anime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface AnimeRepository extends JpaRepository<Anime, Long> {
+public interface AnimeRepository extends JpaRepository<Anime, Long>,
+    JpaSpecificationExecutor<Anime> {
 
   List<Anime> findByStudioAndTitle(String studio, String title);
 
@@ -52,25 +55,15 @@ public interface AnimeRepository extends JpaRepository<Anime, Long> {
                                              @Param("minSeasons") int minSeasons,
                                              Pageable pageable);
 
-  /**
-   * Возвращает список всех external_id из БД.
-   * Используется в scheduledRefresh() для обновления каждого известного аниме.
-   */
   @Query("SELECT a.externalId FROM Anime a WHERE a.externalId IS NOT NULL")
   List<Long> findAllExternalIds();
 
-  /**
-   * Поиск по названию (без учёта регистра, частичное совпадение).
-   * Используется в AnimeController.searchAnime для проверки наличия в БД.
-   */
   Optional<Anime> findByTitleIgnoreCase(String title);
 
-  // Онгоинги по флагу
   @Query("SELECT a.externalId FROM Anime a "
       + "WHERE a.isOngoing = :ongoing AND a.externalId IS NOT NULL")
   List<Long> findExternalIdsByIsOngoing(@Param("ongoing") boolean ongoing);
 
-  // Завершённые, которые давно не обновлялись
   @Query("""
             SELECT a.externalId FROM Anime a
             WHERE a.isOngoing = false
@@ -80,4 +73,11 @@ public interface AnimeRepository extends JpaRepository<Anime, Long> {
   List<Long> findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(
       @Param("threshold") LocalDateTime threshold);
 
+  Page<Anime> findAll(Specification<Anime> spec, Pageable pageable);
+
+  List<Anime> findByStudioContainingIgnoreCase(String studio);
+
+  List<Long> findExternalIdsByIsAnnounced(boolean isAnnounced);
+
+  List<Anime> findTop10ByTitleContainingIgnoreCaseOrderByPopularityRankDesc(String title);
 }

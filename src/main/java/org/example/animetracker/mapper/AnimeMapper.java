@@ -12,23 +12,20 @@ import org.example.animetracker.model.Anime;
 public class AnimeMapper {
 
   public static AnimeDto animeToDto(Anime anime) {
-    if (anime == null) {
-      return null;
-    }
+    if (anime == null) return null;
     return new AnimeDto(
         anime.getId(),
         anime.getTitle(),
         anime.getNumOfReleasedSeasons(),
         anime.getStudio(),
         anime.getIsOngoing(),
-        anime.getIsAnnounced()
+        anime.getIsAnnounced(),
+        anime.getPosterUrl()
     );
   }
 
   public static AnimeDetailedDto animeToDetailedDto(Anime anime) {
-    if (anime == null) {
-      return null;
-    }
+    if (anime == null) return null;
     return new AnimeDetailedDto(
         anime.getId(),
         anime.getTitle(),
@@ -38,7 +35,8 @@ public class AnimeMapper {
             .map(SeasonMapper::seasonToDto)
             .toList(),
         anime.getIsOngoing(),
-        anime.getIsAnnounced()
+        anime.getIsAnnounced(),
+        anime.getPosterUrl()
     );
   }
 }

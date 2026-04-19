@@ -1,0 +1,67 @@
+.coll-detail { padding: 28px 36px 60px; max-width: 900px; margin: 0 auto; }
+.coll-detail__back { margin-bottom: 24px; }
+
+.coll-detail__hero {
+  display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 40px; align-items: flex-start;
+}
+.coll-detail__poster-wrap {
+  flex-shrink: 0; width: 200px; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--border);
+}
+.coll-detail__poster { width: 100%; display: block; }
+
+.coll-detail__info { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 12px; }
+.coll-detail__title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(24px, 4vw, 40px); letter-spacing: 2px; line-height: 1.1;
+}
+.coll-detail__studio { color: var(--text-muted); font-size: 15px; }
+.coll-detail__meta {
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+
+/* Seasons grid */
+.coll-detail__seasons { margin-bottom: 36px; }
+.seasons-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+.season-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 18px; min-width: 90px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  transition: var(--transition);
+}
+.season-card--released { border-color: rgba(34,197,94,0.3); }
+.season-card__num  { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--accent-soft); }
+.season-card__year { font-size: 12px; color: var(--text-muted); }
+.season-card__episodes { font-size: 13px; font-weight: 600; }
+.season-card__status.released { color: var(--green); }
+.season-card__status.pending  { color: var(--yellow); }
+
+/* Review */
+.coll-detail__review { display: flex; flex-direction: column; gap: 16px; }
+.review-preview {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px;
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+}
+.review-preview__score { display: flex; align-items: baseline; gap: 4px; }
+.review-preview__text {
+  flex: 1; font-size: 14px; color: var(--text-muted);
+  font-style: italic; line-height: 1.6;
+  border-left: 2px solid var(--accent); padding-left: 14px;
+}
+.section-heading {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px; letter-spacing: 2px; color: var(--accent-soft);
+  margin-bottom: 16px;
+}
+
+.season-card--ova {
+  opacity: 0.7;
+  min-width: unset;
+  padding: 10px 14px;
+}
+.season-card__num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px; font-weight: 700; color: var(--accent-soft);
+  text-align: center;
+}

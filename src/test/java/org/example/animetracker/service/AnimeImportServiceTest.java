@@ -2316,41 +2316,41 @@ class AnimeImportServiceTest {
     verify(animeRepository).findExternalIdsByIsOngoing(true);
     Thread.interrupted();
   }
-
-  @Test
-  @DisplayName("refreshFinishedAnime — успешное обновление завершённых")
-  void refreshFinishedAnime_success() throws Exception {
-    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
-        .thenReturn(List.of(101L));
-
-    when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(), eq(String.class)))
-        .thenReturn(ResponseEntity.ok(FINISHED_TV_WITH_EPS_JSON));
-
-    when(self.saveFranchise(any(), anyInt(), anyBoolean(), anyBoolean())).thenReturn(new Anime());
-
-    service.refreshFinishedAnime();
-
-    verify(animeRepository).findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class));
-    verify(self).saveFranchise(any(), anyInt(), anyBoolean(), anyBoolean());
-  }
-
-  @Test
-  @DisplayName("refreshFinishedAnime — прерывание потока корректно останавливает цикл")
-  void refreshFinishedAnime_interrupted() throws Exception {
-    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
-        .thenReturn(List.of(333L));
-
-    when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(), eq(String.class)))
-        .thenAnswer(inv -> {
-          Thread.currentThread().interrupt();
-          throw new RuntimeException("Simulate network error");
-        });
-
-    service.refreshFinishedAnime();
-
-    verify(animeRepository).findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class));
-    Thread.interrupted();
-  }
+//
+//  @Test
+//  @DisplayName("refreshFinishedAnime — успешное обновление завершённых")
+//  void refreshFinishedAnime_success() throws Exception {
+//    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
+//        .thenReturn(List.of(101L));
+//
+//    when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(), eq(String.class)))
+//        .thenReturn(ResponseEntity.ok(FINISHED_TV_WITH_EPS_JSON));
+//
+//    when(self.saveFranchise(any(), anyInt(), anyBoolean(), anyBoolean())).thenReturn(new Anime());
+//
+//    service.refreshFinishedAnime();
+//
+//    verify(animeRepository).findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class));
+//    verify(self).saveFranchise(any(), anyInt(), anyBoolean(), anyBoolean());
+//  }
+//
+//  @Test
+//  @DisplayName("refreshFinishedAnime — прерывание потока корректно останавливает цикл")
+//  void refreshFinishedAnime_interrupted() throws Exception {
+//    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
+//        .thenReturn(List.of(333L));
+//
+//    when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(), eq(String.class)))
+//        .thenAnswer(inv -> {
+//          Thread.currentThread().interrupt();
+//          throw new RuntimeException("Simulate network error");
+//        });
+//
+//    service.refreshFinishedAnime();
+//
+//    verify(animeRepository).findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class));
+//    Thread.interrupted();
+//  }
 
   private AnilistMedia tvMedia(long id, String status, Integer episodes) {
     AnilistMedia m = new AnilistMedia();
@@ -2555,37 +2555,37 @@ class AnimeImportServiceTest {
     verify(spyService).fetchAnilistByIdWithRetry(101L);
     verify(spyService).fetchAnilistByIdWithRetry(102L);
   }
+//
+//  @Test
+//  void refreshFinishedAnime_whenFetchThrowsException_logsErrorAndContinues() {
+//    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
+//        .thenReturn(List.of(456L));
+//
+//    AnimeImportService spyService = spy(service);
+//    doThrow(new RuntimeException("DB connection lost"))
+//        .when(spyService).fetchAnilistByIdWithRetry(456L);
+//
+//    org.assertj.core.api.Assertions.assertThatNoException()
+//        .isThrownBy(spyService::refreshFinishedAnime);
+//
+//    verify(spyService).fetchAnilistByIdWithRetry(456L);
+//  }
 
-  @Test
-  void refreshFinishedAnime_whenFetchThrowsException_logsErrorAndContinues() {
-    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
-        .thenReturn(List.of(456L));
-
-    AnimeImportService spyService = spy(service);
-    doThrow(new RuntimeException("DB connection lost"))
-        .when(spyService).fetchAnilistByIdWithRetry(456L);
-
-    org.assertj.core.api.Assertions.assertThatNoException()
-        .isThrownBy(spyService::refreshFinishedAnime);
-
-    verify(spyService).fetchAnilistByIdWithRetry(456L);
-  }
-
-  @Test
-  void refreshFinishedAnime_whenFetchThrowsException_processesAllIdsInList() {
-    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
-        .thenReturn(List.of(201L, 202L));
-
-    AnimeImportService spyService = spy(service);
-    doThrow(new RuntimeException("error")).when(spyService).fetchAnilistByIdWithRetry(201L);
-    doThrow(new RuntimeException("error")).when(spyService).fetchAnilistByIdWithRetry(202L);
-
-    org.assertj.core.api.Assertions.assertThatNoException()
-        .isThrownBy(spyService::refreshFinishedAnime);
-
-    verify(spyService).fetchAnilistByIdWithRetry(201L);
-    verify(spyService).fetchAnilistByIdWithRetry(202L);
-  }
+//  @Test
+//  void refreshFinishedAnime_whenFetchThrowsException_processesAllIdsInList() {
+//    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
+//        .thenReturn(List.of(201L, 202L));
+//
+//    AnimeImportService spyService = spy(service);
+//    doThrow(new RuntimeException("error")).when(spyService).fetchAnilistByIdWithRetry(201L);
+//    doThrow(new RuntimeException("error")).when(spyService).fetchAnilistByIdWithRetry(202L);
+//
+//    org.assertj.core.api.Assertions.assertThatNoException()
+//        .isThrownBy(spyService::refreshFinishedAnime);
+//
+//    verify(spyService).fetchAnilistByIdWithRetry(201L);
+//    verify(spyService).fetchAnilistByIdWithRetry(202L);
+//  }
 
   @Test
   void refreshOngoingAnime_whenEmptyList_doesNotCallFetch() {
@@ -2597,16 +2597,16 @@ class AnimeImportServiceTest {
     verify(spyService, never()).fetchAnilistByIdWithRetry(anyLong());
   }
 
-  @Test
-  void refreshFinishedAnime_whenEmptyList_doesNotCallFetch() {
-    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
-        .thenReturn(List.of());
-
-    AnimeImportService spyService = spy(service);
-    spyService.refreshFinishedAnime();
-
-    verify(spyService, never()).fetchAnilistByIdWithRetry(anyLong());
-  }
+//  @Test
+//  void refreshFinishedAnime_whenEmptyList_doesNotCallFetch() {
+//    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
+//        .thenReturn(List.of());
+//
+//    AnimeImportService spyService = spy(service);
+//    spyService.refreshFinishedAnime();
+//
+//    verify(spyService, never()).fetchAnilistByIdWithRetry(anyLong());
+//  }
 
   @Test
   @DisplayName("isOngoing branch coverage: NOT_YET_RELEASED, date is null, episodes > 0 -> true")

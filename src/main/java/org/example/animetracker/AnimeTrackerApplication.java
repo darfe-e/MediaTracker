@@ -1,6 +1,5 @@
 package org.example.animetracker;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.example.animetracker.repository.AnimeRepository;
 import org.example.animetracker.service.AsyncAnimeImportService;
@@ -25,11 +24,6 @@ public class AnimeTrackerApplication {
   @Bean
   public RestTemplate restTemplate() {
     return new RestTemplate();
-  }
-
-  @Bean
-  public ObjectMapper objectMapper() {
-    return new ObjectMapper();
   }
 
   @Bean

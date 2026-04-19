@@ -1,0 +1,61 @@
+.coll-item {
+  display: flex; align-items: center; gap: 18px;
+  padding: 10px 18px 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative; overflow: hidden;
+  min-height: 96px;
+
+  max-width: 900px;
+  margin: 0 auto;
+}
+.coll-item::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  border-radius: 2px 0 0 2px;
+}
+.coll-item--ongoing::before   { background: var(--green); }
+.coll-item--announced::before { background: var(--yellow); }
+
+.coll-item--ongoing   { background: rgba(34,197,94,0.05);  border-color: rgba(34,197,94,0.25); }
+.coll-item--announced { background: rgba(245,158,11,0.05); border-color: rgba(245,158,11,0.25); }
+.coll-item:hover { transform: translateX(5px); box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+
+/* [пункт 2] Увеличенный постер */
+.coll-item__poster {
+  width: 60px; height: 85px; object-fit: cover; border-radius: 6px;
+  flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.coll-item__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.coll-item__title {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;
+}
+.coll-item__studio { font-size: 12px; color: var(--text-muted); }
+
+.coll-item__status {
+  display: flex; flex-direction: column; gap: 4px;
+  flex-shrink: 0; min-width: 170px; padding-right: 12px;
+}
+.coll-item__status-label  { font-size: 12px; font-weight: 700; letter-spacing: 0.3px; }
+.status--ongoing   { color: var(--green); }
+.status--announced { color: var(--yellow); }
+.status--ended     { color: var(--text-muted); }
+
+.coll-item__nextdate {
+  font-size: 11px; color: var(--accent-soft);
+  font-weight: 600;
+}
+.coll-item__seasons { font-size: 11px; color: var(--text-muted); }
+
+.coll-item__score {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 20px; font-weight: 700; min-width: 56px;
+  justify-content: flex-end;
+}
+.score-star { color: var(--yellow); font-size: 18px; }
+.score-none { color: var(--text-muted); font-size: 16px; }
+.coll-item__arrow { font-size: 22px; color: var(--text-muted); margin-left: 6px; }

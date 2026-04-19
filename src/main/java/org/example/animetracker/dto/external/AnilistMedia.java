@@ -20,7 +20,7 @@ public class AnilistMedia {
   private List<String> genres;
   private AnilistRelations relations;
   private AnilistAiringSchedule airingSchedule;
-  // streamingEpisodes убран — см. комментарий в AnimeImportService
+  private AnilistCoverImage coverImage;
 }
 
 

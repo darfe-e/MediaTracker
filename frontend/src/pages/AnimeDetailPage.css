@@ -1,0 +1,106 @@
+.detail-page { padding: 28px 36px 60px; max-width: 1100px; margin: 0 auto; }
+.detail-back { margin-bottom: 24px; }
+
+.detail-error {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 60px 20px; text-align: center; gap: 12px;
+}
+.detail-error__icon { font-size: 48px; }
+.detail-error h2 { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 1px; }
+.detail-error p  { color: var(--text-muted); font-size: 14px; }
+.detail-error__hint {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 20px; font-size: 13px;
+  color: var(--text-muted); max-width: 500px; line-height: 1.8;
+  text-align: left;
+}
+.detail-error__hint code {
+  background: var(--bg); padding: 2px 6px; border-radius: 3px;
+  color: var(--accent-soft); font-size: 12px;
+}
+
+.detail-hero {
+  display: flex; gap: 36px; align-items: flex-start; flex-wrap: wrap;
+  margin-bottom: 48px;
+}
+.detail-poster-wrap {
+  flex-shrink: 0; width: 240px; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--border);
+  position: relative;
+}
+.detail-poster { width: 100%; display: block; min-height: 320px; background: var(--surface2); }
+.detail-poster__rank {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,0.7); padding: 8px 12px;
+  font-weight: 700; color: var(--yellow); font-size: 14px;
+  text-align: center; backdrop-filter: blur(4px);
+}
+
+.detail-info { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 16px; }
+.detail-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.detail-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(28px, 5vw, 48px); letter-spacing: 2px; line-height: 1.1;
+}
+
+.detail-meta-grid {
+  display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;
+}
+.meta-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 16px;
+  display: flex; flex-direction: column; gap: 4px; min-width: 110px;
+}
+.meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-muted); }
+.meta-item > span:last-child { font-weight: 600; font-size: 16px; }
+
+.detail-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+
+/* Seasons */
+.section-heading {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px; letter-spacing: 2px; color: var(--accent-soft);
+  margin-bottom: 16px;
+}
+.detail-seasons { display: flex; flex-direction: column; gap: 10px; }
+
+.season-block {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.season-header {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px; background: none; border: none; cursor: pointer;
+  color: var(--text); text-align: left; transition: var(--transition);
+}
+.season-header:hover { background: var(--surface2); }
+.season-title { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700; }
+.season-meta  { font-size: 13px; color: var(--text-muted); flex: 1; }
+.season-toggle{ margin-left: auto; color: var(--accent); font-size: 12px; }
+
+.episode-list { list-style: none; border-top: 1px solid var(--border); }
+.episode-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 14px;
+}
+.episode-item:last-child { border-bottom: none; }
+.ep-num   { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--accent); min-width: 36px; }
+.ep-title { flex: 1; }
+.ep-date  { font-size: 12px; color: var(--text-muted); }
+.ep-empty { color: var(--text-muted); font-style: italic; }
+
+.detail-error__msg {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 16px; font-size: 13px;
+  color: var(--text-muted); max-width: 560px; white-space: pre-wrap;
+  line-height: 1.7; text-align: left;
+}
+
+/* Compact OVA/Special row - no expand */
+.season-block--compact { border: 1px solid var(--border); border-radius: var(--radius); }
+.season-header--flat {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px; cursor: default;
+}
+.season-title--muted { color: var(--text-muted); font-style: italic; }

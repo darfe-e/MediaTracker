@@ -14,13 +14,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Tag(name = "Users", description = "Управление пользователями")
 public interface UserControllerApi {
 
-  @Operation(summary = "Создать нового пользователя")
-  @ApiResponse(responseCode = "201", description = "Пользователь создан")
-  @ApiResponse(responseCode = "400", description = "Некорректное имя")
-  @PostMapping
-  ResponseEntity<UserDto> createUser(@Parameter(description = "Имя пользователя")
-                                     @RequestParam String name);
-
   @Operation(summary = "Удалить пользователя по ID")
   @ApiResponse(responseCode = "204", description = "Удалено успешно")
   @ApiResponse(responseCode = "404", description = "Пользователь не найден")

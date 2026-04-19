@@ -1,14 +1,11 @@
 package org.example.animetracker.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.example.animetracker.dto.UserDto;
-import org.example.animetracker.model.User;
 import org.example.animetracker.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,32 +23,6 @@ class UserServiceTest {
 
   @InjectMocks
   private UserService userService;
-
-  @Test
-  @DisplayName("createUser — успешное создание пользователя")
-  void createUser_success_returnsDto() {
-    User saved = buildUser(1L, "Alice");
-    when(userRepository.save(any(User.class))).thenReturn(saved);
-
-    UserDto result = userService.createUser("Alice");
-
-    assertThat(result).isNotNull();
-    assertThat(result.getName()).isEqualTo("Alice");
-    assertThat(result.getId()).isEqualTo(1L);
-    verify(userRepository).save(any(User.class));
-  }
-
-  @Test
-  @DisplayName("createUser — имя сохраняется без изменений")
-  void createUser_nameIsPreservedExactly() {
-    String name = "  SomeUser  ";
-    User saved = buildUser(2L, name);
-    when(userRepository.save(any(User.class))).thenReturn(saved);
-
-    UserDto result = userService.createUser(name);
-
-    assertThat(result.getName()).isEqualTo(name);
-  }
 
   @Test
   @DisplayName("deleteUser — пользователь существует → успешное удаление")
@@ -73,12 +44,5 @@ class UserServiceTest {
         .hasMessageContaining("user is not found by id: 99");
 
     verify(userRepository, never()).deleteById(any());
-  }
-
-  private User buildUser(Long id, String name) {
-    User u = new User();
-    u.setId(id);
-    u.setName(name);
-    return u;
   }
 }

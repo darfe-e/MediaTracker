@@ -85,4 +85,11 @@ public class FavoriteAnimeController implements FavoriteAnimeControllerApi {
     favoriteAnimeService.removeConnection(userId, animeId);
     return ResponseEntity.noContent().build();
   }
+
+  @GetMapping("/search")
+  public ResponseEntity<List<AnimeDto>> searchInCollection(
+      @PathVariable Long userId,
+      @RequestParam String q) {
+    return ResponseEntity.ok(favoriteAnimeService.searchInCollection(userId, q));
+  }
 }

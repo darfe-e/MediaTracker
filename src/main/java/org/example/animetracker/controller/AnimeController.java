@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import org.example.animetracker.controller.api.AnimeControllerApi;
 import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
-import org.example.animetracker.mapper.AnimeMapper;
 import org.example.animetracker.service.AnimeImportService;
 import org.example.animetracker.service.AnimeService;
 import org.example.animetracker.service.AsyncAnimeImportService;
@@ -27,7 +26,6 @@ public class AnimeController implements AnimeControllerApi {
 
   private final AnimeService animeService;
   private final AnimeImportService animeImportService;
-  private final AsyncAnimeImportService asyncImportService;
 
   @GetMapping("/{id}")
   public ResponseEntity<AnimeDetailedDto> getById(@PathVariable Long id) {
@@ -36,10 +34,9 @@ public class AnimeController implements AnimeControllerApi {
   }
 
   @GetMapping
-  public ResponseEntity<List<AnimeDto>> getByStudioAndTitle(
-      @RequestParam(required = false) String studio,
-      @RequestParam(required = false) String title) {
-    List<AnimeDto> result = animeService.findByStudioAndName(studio, title);
+  public ResponseEntity<List<AnimeDto>> getByStudio(
+      @RequestParam(required = false) String studio) {
+    List<AnimeDto> result = animeService.findByStudio(studio);
     return ResponseEntity.ok(result);
   }
 
@@ -52,46 +49,19 @@ public class AnimeController implements AnimeControllerApi {
     return ResponseEntity.ok(result);
   }
 
-  /**
-   * Поиск аниме с быстрым ответом.
-   *
-   * Проблема со старым кодом: importFromApi всегда делал полный BFS + Jikan
-   * даже если аниме уже было в БД — клиент ждал 30-60 секунд.
-   *
-   * Новая стратегия (stale-while-revalidate):
-   *
-   * 1. Ищем в нашей БД по названию (мгновенно)
-   * 2. Если НАЙДЕНО:
-   *    - Возвращаем данные из БД немедленно (~10мс)
-   *    - Запускаем фоновое обновление через AsyncAnimeImportService
-   *    - В заголовке X-Background-Update-TaskId передаём id фоновой задачи
-   *      (клиент может следить за обновлением через GET /import/tasks/{id})
-   * 3. Если НЕ НАЙДЕНО в БД:
-   *    - Делаем синхронный импорт (полный BFS — первый раз неизбежно медленно)
-   *    - Возвращаем результат после сохранения
-   *
-   * Пример: первый поиск "One Piece" — ждём ~5 мин.
-   *         второй поиск "One Piece" — ответ < 100мс, данные обновляются в фоне.
-   */
   @GetMapping("/search")
-  public ResponseEntity<AnimeDto> searchAnime(@RequestParam String title) {
-    // 1. Ищем в локальной БД
-    return animeService.findByTitle(title)
-        .map(animeFromDb -> {
-          // Аниме уже есть — отвечаем мгновенно, обновляем в фоне
-          String taskId = asyncImportService.startSingleImport(title);
+  public ResponseEntity<org.example.animetracker.dto.AnimeDto> searchAnime(
+      @RequestParam String title) {
 
-          return ResponseEntity.ok()
-              .header("X-Data-Source", "database")
-              .header("X-Background-Update-TaskId", taskId)
-              .body(AnimeMapper.animeToDto(animeFromDb));
-        })
+    return animeService.findByTitle(title)
+        .map(animeFromDb -> ResponseEntity.ok()
+            .header("X-Data-Source", "database")
+            .body(org.example.animetracker.mapper.AnimeMapper.animeToDto(animeFromDb)))
         .orElseGet(() -> animeImportService.importFromApi(title)
-              .map(anime -> ResponseEntity.ok()
-                  .header("X-Data-Source", "anilist-api")
-                  .body(AnimeMapper.animeToDto(anime)))
-              .orElse(ResponseEntity.notFound().build())
-        );
+            .map(anime -> ResponseEntity.ok()
+                .header("X-Data-Source", "anilist-api")
+                .body(org.example.animetracker.mapper.AnimeMapper.animeToDto(anime)))
+            .orElse(ResponseEntity.notFound().build()));
   }
 
   @GetMapping("/search-jpql")
@@ -115,5 +85,25 @@ public class AnimeController implements AnimeControllerApi {
     Page<AnimeDto> result = animeService.findByGenreAndMinSeasonsNative(
         genre, minSeasons, pageable);
     return ResponseEntity.ok(result);
+  }
+
+  @GetMapping("/filter")
+  public ResponseEntity<Page<AnimeDto>> filterAnime(
+      @RequestParam(required = false) String studio,
+      @RequestParam(required = false) String genre,
+      @RequestParam(required = false) Integer minEpisodes,
+      @RequestParam(required = false) Boolean isAiring,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size) {
+
+    Pageable pageable = PageRequest.of(page, size, Sort.by("popularityRank").descending());
+    Page<AnimeDto> result = animeService.findByFilters(
+        studio, genre, minEpisodes, isAiring, pageable);
+    return ResponseEntity.ok(result);
+  }
+
+  @GetMapping("/suggest")
+  public ResponseEntity<List<AnimeDto>> suggest(@RequestParam String q) {
+    return ResponseEntity.ok(animeService.searchByTitlePartial(q));
   }
 }

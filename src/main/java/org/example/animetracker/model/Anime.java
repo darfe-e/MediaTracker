@@ -38,6 +38,9 @@ public class Anime {
   @Column(unique = true)
   private Long externalId;
 
+  @Column(name = "poster_url")
+  private String posterUrl;
+
   @OneToMany(mappedBy = "anime", cascade = CascadeType.ALL)
   private Set<Season> seasons = new HashSet<>();
 
