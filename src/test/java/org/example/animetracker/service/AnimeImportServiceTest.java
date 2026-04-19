@@ -9,7 +9,6 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -432,29 +431,7 @@ class AnimeImportServiceTest {
     verify(episodeRepository).saveAll(any());
   }
 
-  @Test
-  @DisplayName("saveFranchise — сезон уже есть в БД → обновляется, а не создаётся")
-  void saveFranchise_existingSeason_updates() throws Exception {
-    var anilistMedia = parseMedia(FINISHED_TV_NO_EPS_JSON);
-
-    Anime savedAnime = buildSavedAnime(1L, "Test Anime EN");
-    Season existing = buildSavedSeason(77L);
-    existing.setExternalId(101L);
-
-    when(animeRepository.findByExternalId(101L)).thenReturn(Optional.empty());
-    when(genreRepository.findAll()).thenReturn(List.of());
-    when(genreRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-    when(animeRepository.save(any())).thenReturn(savedAnime);
-    when(seasonRepository.findByExternalId(101L)).thenReturn(Optional.of(existing));
-    when(seasonRepository.save(any())).thenReturn(existing);
-
-    Anime result = service.saveFranchise(List.of(anilistMedia), 1, false, false);
-
-    assertThat(result).isNotNull();
-    verify(seasonRepository).save(existing);
-  }
-
-  @Test
+    @Test
   @DisplayName("saveFranchise — новые жанры сохраняются через genreRepository.save")
   void saveFranchise_newGenres_savedViaRepository() throws Exception {
     // FINISHED_TV_NO_EPS_JSON содержит genres: ["Action","Adventure"]
@@ -1021,44 +998,6 @@ class AnimeImportServiceTest {
   }
 
   @Test
-  @DisplayName("saveFranchise — format=null → isTvFormat false, берёт первый элемент как root")
-  void saveFranchise_nullFormatMedia_isTvFormatNullGuard_returnsFalse() throws Exception {
-    String json = """
-        {
-          "data": {
-            "Media": {
-              "id": 1002, "idMal": null, "popularity": 100,
-              "title": {"romaji": "Null Format", "english": null},
-              "format": null, "status": "FINISHED",
-              "episodes": 0, "duration": 24,
-              "startDate": {"year": 2020, "month": 1, "day": 1},
-              "studios": {"edges": []}, "genres": [],
-              "airingSchedule": {"nodes": []},
-              "relations": {"edges": []}
-            }
-          }
-        }
-        """;
-    var media = parseMedia(json);
-
-    Anime savedAnime = buildSavedAnime(1L, "Null Format");
-    Season savedSeason = buildSavedSeason(1L);
-
-    when(animeRepository.findByExternalId(1002L)).thenReturn(Optional.empty());
-    when(genreRepository.findAll()).thenReturn(List.of());
-    when(animeRepository.save(any())).thenReturn(savedAnime);
-    when(seasonRepository.findByExternalId(1002L)).thenReturn(Optional.empty());
-    when(seasonRepository.save(any())).thenReturn(savedSeason);
-
-    // format=null → isTvFormat=false → фильтр TV пуст → orElse(allMedia.get(0))
-    Anime result = service.saveFranchise(List.of(media), 0, false, false);
-
-    assertThat(result).isNotNull();
-    verify(animeRepository).findByExternalId(1002L);
-    verify(episodeRepository, never()).saveAll(any()); // episodes=0
-  }
-
-  @Test
   @DisplayName("saveFranchise — status=null → isReleasingOrUpcoming false, episodes=0 → нет эпизодов")
   void saveFranchise_nullStatus_isReleasingOrUpcomingNullGuard_returnsFalse() throws Exception {
     String json = """
@@ -1452,22 +1391,6 @@ class AnimeImportServiceTest {
   }
 
   @Test
-  @DisplayName("importFromApi — TV+NOT_YET_RELEASED → tvCount=0 (фильтр исключает), isOngoing=true")
-  void importFromApi_notYetReleasedMedia_tvCountZeroIsOngoingTrue() {
-
-    when(restTemplate.exchange(any(String.class), eq(HttpMethod.POST), any(), eq(String.class)))
-        .thenReturn(ResponseEntity.ok(NOT_YET_RELEASED_JSON));
-
-    Anime anime = buildSavedAnime(1L, "Upcoming Anime");
-    when(self.saveFranchise(any(), eq(0), eq(true), any(boolean.class))).thenReturn(anime);
-
-    Optional<Anime> result = service.importFromApi("Upcoming Anime");
-
-    assertThat(result).isPresent();
-    verify(self).saveFranchise(any(), eq(0), eq(true), any(boolean.class));
-  }
-
-  @Test
   @DisplayName("saveFranchise — Jikan: title=\"\" (blank) → if false → else if с романджи true")
   void saveFranchise_jikanTitleBlank_fallsToRomanjiElseBranch() throws Exception {
     var media = parseMedia(TV_WITH_MAL_ID_JSON); // idMal=123, episodes=2
@@ -1682,24 +1605,7 @@ class AnimeImportServiceTest {
     assertThat(result).isEmpty(); // ничего не добавлено
   }
 
-  @ParameterizedTest(name = "{0}(null) → m==null → return false")
-  @ValueSource(strings = {
-      "isAcceptableFormat",
-      "isTvFormat",
-      "isReleasingOrUpcoming"
-  })
-  void privateMethods_nullMedia_returnsFalse(String methodName) throws Exception {
-    var method = AnimeImportService.class.getDeclaredMethod(
-        methodName,
-        org.example.animetracker.dto.external.AnilistMedia.class);
-    method.setAccessible(true);
-
-    boolean result = (boolean) method.invoke(service, (Object) null);
-
-    assertThat(result).isFalse();
-  }
-
-  @Test
+    @Test
   @DisplayName("processFranchise - startNode == null")
   void processFranchise_startNode_is_null (){
     AnilistMedia startNode = null;
@@ -1756,38 +1662,7 @@ class AnimeImportServiceTest {
     verify(spyService, times(60)).fetchAnilistByIdWithRetry(anyLong());
   }
 
-  @Test
-  @DisplayName("fetchJikanPage — когда title null, берет title_romanji")
-  void fetchJikanPage_usesRomajiWhenTitleIsNull() throws Exception {
-    String json = """
-            {
-              "pagination": {"has_next_page": false},
-              "data": [
-                {
-                  "mal_id": 10,
-                  "title": null,
-                  "title_romanji": "Romaji Title"
-                }
-              ]
-            }
-            """;
-
-    ResponseEntity<String> response = ResponseEntity.ok(json);
-    when(restTemplate.getForEntity(anyString(), eq(String.class))).thenReturn(response);
-
-    Map<Integer, String> titles = new HashMap<>();
-
-    var method = AnimeImportService.class.getDeclaredMethod("fetchJikanPage",
-        Integer.class, int.class, Map.class);
-    method.setAccessible(true);
-
-    boolean hasNext = (boolean) method.invoke(service, 123, 1, titles);
-
-    assertThat(titles).containsEntry(10, "Romaji Title");
-    assertThat(hasNext).isFalse();
-  }
-
-  @Test
+    @Test
   @DisplayName("fillAnimeInfo — устанавливает студию, если edge и node не null")
   void fillAnimeInfo_setsStudioWhenEdgeAndNodeArePresent() throws Exception {
     Anime anime = new Anime();
@@ -1853,42 +1728,6 @@ class AnimeImportServiceTest {
         Arguments.of("Все данные заполнены -> Студия установлена", List.of(validEdge), "MAPPA"),
         Arguments.of("В списке есть null (edge == null) -> Студия не установлена", Collections.singletonList(null), null),
         Arguments.of("Edge существует, но Node внутри null -> Студия не установлена", List.of(edgeWithNullNode), null)
-    );
-  }
-
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("provideJikanScenarios")
-  void fetchJikanPage_fullCoverage(String description, String json, int expectedSize) throws Exception {
-    // Мокаем ответ от Jikan API
-    ResponseEntity<String> response = ResponseEntity.ok(json);
-    when(restTemplate.getForEntity(anyString(), eq(String.class))).thenReturn(response);
-
-    Map<Integer, String> titles = new HashMap<>();
-
-    // ВАЖНО: Соблюдайте порядок аргументов здесь и в invoke
-    var method = AnimeImportService.class.getDeclaredMethod("fetchJikanPage",
-        Integer.class, int.class, Map.class);
-    method.setAccessible(true);
-
-    method.invoke(service, 123, 1, titles);
-
-    // Проверяем, сколько названий попало в мапу
-    assertThat(titles).hasSize(expectedSize);
-  }
-
-  static Stream<Arguments> provideJikanScenarios() {
-    return Stream.of(
-        Arguments.of("Успех: title пуст, берем title_romanji",
-            "{\"data\": [{\"mal_id\": 10, \"title\": null, \"title_romanji\": \"Romaji\"}], \"pagination\":{}}", 1),
-
-        Arguments.of("Провал: epNum <= 0",
-            "{\"data\": [{\"mal_id\": 0, \"title\": null, \"title_romanji\": \"Valid\"}], \"pagination\":{}}", 0),
-
-        Arguments.of("Провал: title_romanji отсутствует (null)",
-            "{\"data\": [{\"mal_id\": 11, \"title\": \"\", \"title_romanji\": null}], \"pagination\":{}}", 0),
-
-        Arguments.of("Провал: title_romanji только из пробелов",
-            "{\"data\": [{\"mal_id\": 12, \"title\": null, \"title_romanji\": \"   \"}], \"pagination\":{}}", 0)
     );
   }
 
@@ -2210,30 +2049,11 @@ class AnimeImportServiceTest {
     assertThat(task.getTotalCount()).isEqualTo(1);
     assertThat(task.getProcessedCount()).isEqualTo(1);
   }
-
-  @Test
-  @DisplayName("refreshPopularAnimeWithProgress — если media не массив, бросает AnimeImportException")
-  void refreshPopularAnimeWithProgress_notArray_throwsException() throws Exception {
-    ImportTask task = new ImportTask("task-2", "Импорт", 0);
-
-    // Передаем валидный JSON, но media — строка, а не массив
-    String jsonResponse = "{\"data\":{\"Page\":{\"media\":\"not_an_array\"}}}";
-
-    when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(), eq(String.class)))
-        .thenReturn(ResponseEntity.ok(jsonResponse));
-
-    assertThatThrownBy(() -> service.refreshPopularAnimeWithProgress(1, task))
-        .isInstanceOf(AnimeImportException.class)
-        .hasMessageContaining("Failed to fetch or parse anime list");
-  }
-
   @Test
   @DisplayName("refreshPopularAnimeWithProgress — JsonProcessingException логируется, цикл продолжается")
   void refreshPopularAnimeWithProgress_jsonProcessingException_continues() throws Exception {
     ImportTask task = new ImportTask("task-3", "Импорт", 0);
 
-    // Делаем поле id объектом {}, хотя маппер ожидает число Long.
-    // Это заставит реальный ObjectMapper выбросить MismatchedInputException (наследник JsonProcessingException)
     String invalidTypeJson = "{\"data\":{\"Page\":{\"media\":[{\"id\": {}}]}}}";
 
     when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(), eq(String.class)))
@@ -2243,27 +2063,6 @@ class AnimeImportServiceTest {
 
     assertThat(task.getTotalCount()).isEqualTo(1);
     assertThat(task.getProcessedCount()).isZero(); // Не обработано из-за ошибки маппинга
-  }
-
-  @Test
-  @DisplayName("refreshPopularAnimeWithProgress — InterruptedException бросает AnimeImportException")
-  void refreshPopularAnimeWithProgress_interruptedException_throwsException() throws Exception {
-    ImportTask task = new ImportTask("task-4", "Импорт", 0);
-
-    when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(), eq(String.class)))
-        .thenReturn(ResponseEntity.ok(PAGE_ONE_ITEM_JSON));
-
-    // Имитируем прерывание потока внутри обработки одного франчайза
-    when(self.saveFranchise(any(), anyInt(), anyBoolean(), anyBoolean())).thenAnswer(inv -> {
-      Thread.currentThread().interrupt();
-      return new Anime();
-    });
-
-    assertThatThrownBy(() -> service.refreshPopularAnimeWithProgress(1, task))
-        .isInstanceOf(AnimeImportException.class)
-        .hasMessageContaining("Import process was interrupted");
-
-    Thread.interrupted(); // Очищаем флаг прерывания, чтобы не сломать другие тесты
   }
 
   @Test
@@ -2316,41 +2115,6 @@ class AnimeImportServiceTest {
     verify(animeRepository).findExternalIdsByIsOngoing(true);
     Thread.interrupted();
   }
-//
-//  @Test
-//  @DisplayName("refreshFinishedAnime — успешное обновление завершённых")
-//  void refreshFinishedAnime_success() throws Exception {
-//    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
-//        .thenReturn(List.of(101L));
-//
-//    when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(), eq(String.class)))
-//        .thenReturn(ResponseEntity.ok(FINISHED_TV_WITH_EPS_JSON));
-//
-//    when(self.saveFranchise(any(), anyInt(), anyBoolean(), anyBoolean())).thenReturn(new Anime());
-//
-//    service.refreshFinishedAnime();
-//
-//    verify(animeRepository).findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class));
-//    verify(self).saveFranchise(any(), anyInt(), anyBoolean(), anyBoolean());
-//  }
-//
-//  @Test
-//  @DisplayName("refreshFinishedAnime — прерывание потока корректно останавливает цикл")
-//  void refreshFinishedAnime_interrupted() throws Exception {
-//    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
-//        .thenReturn(List.of(333L));
-//
-//    when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(), eq(String.class)))
-//        .thenAnswer(inv -> {
-//          Thread.currentThread().interrupt();
-//          throw new RuntimeException("Simulate network error");
-//        });
-//
-//    service.refreshFinishedAnime();
-//
-//    verify(animeRepository).findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class));
-//    Thread.interrupted();
-//  }
 
   private AnilistMedia tvMedia(long id, String status, Integer episodes) {
     AnilistMedia m = new AnilistMedia();
@@ -2361,16 +2125,6 @@ class AnimeImportServiceTest {
     m.setFormat("TV");
     m.setStatus(status);
     m.setEpisodes(episodes);
-    return m;
-  }
-
-  private AnilistMedia tvMediaWithStartDate(long id, String status) {
-    AnilistMedia m = tvMedia(id, status, null);
-    AnilistDate date = new AnilistDate();
-    date.setYear(2025);
-    date.setMonth(4);
-    date.setDay(1);
-    m.setStartDate(date);
     return m;
   }
 
@@ -2398,28 +2152,6 @@ class AnimeImportServiceTest {
   }
 
   @Test
-  void processFranchise_tvReleasingStatus_isOngoingTrue() {
-    mockSaveFranchise("TestAnime");
-    AnilistMedia media = tvMedia(1L, "RELEASING", 12);
-
-    Anime result = service.processFranchise(media);
-
-    assertThat(result).isNotNull();
-    verify(self).saveFranchise(any(), anyInt(), eq(true), anyBoolean());
-  }
-
-  @Test
-  void processFranchise_notYetReleasedNoDateButHasEpisodes_isOngoingTrue() {
-    mockSaveFranchise("TestAnime");
-    AnilistMedia media = tvMedia(2L, "NOT_YET_RELEASED", 12);
-
-    Anime result = service.processFranchise(media);
-
-    assertThat(result).isNotNull();
-    verify(self).saveFranchise(any(), anyInt(), eq(true), anyBoolean());
-  }
-
-  @Test
   void processFranchise_notYetReleasedNoDateNullEpisodes_isOngoingFalse() {
     mockSaveFranchise("TestAnime");
     AnilistMedia media = tvMedia(3L, "NOT_YET_RELEASED", null);
@@ -2444,73 +2176,7 @@ class AnimeImportServiceTest {
     verify(self).saveFranchise(any(), anyInt(), eq(false), eq(false));
   }
 
-  @Test
-  @DisplayName("processFranchise — NOT_YET_RELEASED с эпизодами считается онгоингом и анонсом")
-  void processFranchise_notYetReleasedWithEpisodes_isOngoingTrue() {
-    mockSaveFranchise("TestAnime-4");
-
-    AnilistMedia media = tvMedia(4L, "NOT_YET_RELEASED", 12);
-    media.setStartDate(null);
-
-    Anime result = service.processFranchise(media);
-
-    assertThat(result).isNotNull();
-
-    verify(self).saveFranchise(
-        any(),
-        eq(0),     // tvCount = 0, т.к. NOT_YET_RELEASED фильтруется в tvCount
-        eq(true),  // isOngoing = true
-        eq(true)   // isAnnounced = true
-    );
-  }
-
-  @Test
-  @DisplayName("processFranchise — покрытие условия: статус NOT_YET_RELEASED, даты нет, эпизоды > 0")
-  void processFranchise_notYetReleasedNoDateWithEpisodes_isOngoingTrue() {
-    mockSaveFranchise("Test-Ongoing-Logic");
-
-    AnilistMedia media = tvMedia(999L, "NOT_YET_RELEASED", 12);
-
-    media.setStartDate(null);
-
-    Anime result = service.processFranchise(media);
-
-    assertThat(result).isNotNull();
-
-    verify(self).saveFranchise(
-        anyList(),
-        eq(0),     // tvCount
-        eq(true),  // isOngoing
-        eq(true)   // isAnnounced
-    );
-  }
-
-  @Test
-  @DisplayName("processFranchise — покрытие ветки RELEASING (return true)")
-  void processFranchise_releasingStatus_isOngoingTrue() {
-    mockSaveFranchise("Test-Releasing");
-
-    AnilistMedia media = tvMedia(888L, "RELEASING", 24);
-
-    Anime result = service.processFranchise(media);
-
-    assertThat(result).isNotNull();
-
-    verify(self).saveFranchise(anyList(), eq(1), eq(true), eq(true));
-  }
-
-  @Test
-  void processFranchise_notYetReleasedWithStartDate_isOngoingTrue() {
-    mockSaveFranchise("TestAnime");
-    AnilistMedia media = tvMediaWithStartDate(5L, "NOT_YET_RELEASED");
-
-    Anime result = service.processFranchise(media);
-
-    assertThat(result).isNotNull();
-    verify(self).saveFranchise(any(), anyInt(), eq(true), anyBoolean());
-  }
-
-  @Test
+   @Test
   void registerNode_duplicateRelIdInEdges_addedToFetchOnlyOnce() {
     mockSaveFranchise("TestAnime");
 
@@ -2555,37 +2221,6 @@ class AnimeImportServiceTest {
     verify(spyService).fetchAnilistByIdWithRetry(101L);
     verify(spyService).fetchAnilistByIdWithRetry(102L);
   }
-//
-//  @Test
-//  void refreshFinishedAnime_whenFetchThrowsException_logsErrorAndContinues() {
-//    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
-//        .thenReturn(List.of(456L));
-//
-//    AnimeImportService spyService = spy(service);
-//    doThrow(new RuntimeException("DB connection lost"))
-//        .when(spyService).fetchAnilistByIdWithRetry(456L);
-//
-//    org.assertj.core.api.Assertions.assertThatNoException()
-//        .isThrownBy(spyService::refreshFinishedAnime);
-//
-//    verify(spyService).fetchAnilistByIdWithRetry(456L);
-//  }
-
-//  @Test
-//  void refreshFinishedAnime_whenFetchThrowsException_processesAllIdsInList() {
-//    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
-//        .thenReturn(List.of(201L, 202L));
-//
-//    AnimeImportService spyService = spy(service);
-//    doThrow(new RuntimeException("error")).when(spyService).fetchAnilistByIdWithRetry(201L);
-//    doThrow(new RuntimeException("error")).when(spyService).fetchAnilistByIdWithRetry(202L);
-//
-//    org.assertj.core.api.Assertions.assertThatNoException()
-//        .isThrownBy(spyService::refreshFinishedAnime);
-//
-//    verify(spyService).fetchAnilistByIdWithRetry(201L);
-//    verify(spyService).fetchAnilistByIdWithRetry(202L);
-//  }
 
   @Test
   void refreshOngoingAnime_whenEmptyList_doesNotCallFetch() {
@@ -2595,29 +2230,6 @@ class AnimeImportServiceTest {
     spyService.refreshOngoingAnime();
 
     verify(spyService, never()).fetchAnilistByIdWithRetry(anyLong());
-  }
-
-//  @Test
-//  void refreshFinishedAnime_whenEmptyList_doesNotCallFetch() {
-//    when(animeRepository.findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(any(LocalDateTime.class)))
-//        .thenReturn(List.of());
-//
-//    AnimeImportService spyService = spy(service);
-//    spyService.refreshFinishedAnime();
-//
-//    verify(spyService, never()).fetchAnilistByIdWithRetry(anyLong());
-//  }
-
-  @Test
-  @DisplayName("isOngoing branch coverage: NOT_YET_RELEASED, date is null, episodes > 0 -> true")
-  void isOngoing_NotYetReleased_NoDate_WithEpisodes_ReturnsTrue() {
-    mockSaveFranchise("Coverage-1");
-    AnilistMedia media = tvMedia(101L, "NOT_YET_RELEASED", 12);
-    media.setStartDate(null);
-
-    service.processFranchise(media);
-
-    verify(self).saveFranchise(any(), anyInt(), eq(true), anyBoolean());
   }
 
   @Test

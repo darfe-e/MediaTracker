@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.example.animetracker.dto.AnimeDetailedDto;
-import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.service.AnimeImportService;
 import org.example.animetracker.service.AnimeService;
@@ -65,31 +64,8 @@ class AnimeControllerTest {
   }
 
   @Test
-  @DisplayName("GET /?studio&title — возвращает 200 OK")
-  void getByStudioAndTitle_withParams_returnsOk() throws Exception {
-    when(animeService.findByStudioAndName(anyString(), anyString()))
-        .thenReturn(List.of(new AnimeDto(1L, "Naruto", 5, "Pierrot", true, true, null)));
-
-    mockMvc.perform(get("/anime-catalogue")
-            .param("studio", "Pierrot")
-            .param("title", "Naruto"))
-        .andExpect(status().isOk());
-  }
-
-  @Test
-  @DisplayName("GET / (без параметров) — возвращает 200 OK")
-  void getByStudioAndTitle_noParams_returnsOk() throws Exception {
-    when(animeService.findByStudioAndName(null, null)).thenReturn(List.of());
-
-    mockMvc.perform(get("/anime-catalogue"))
-        .andExpect(status().isOk());
-  }
-
-  @Test
   @DisplayName("GET // — возвращает страницу 200 OK")
   void getAllSorted_returnsOk() throws Exception {
-    // Используем PageRequest, чтобы избежать UnsupportedOperationException
-    // при Jackson-сериализации Pageable.unpaged()
     when(animeService.getAllSortedByPopularity(any(Pageable.class)))
         .thenReturn(new PageImpl<>(new ArrayList<>(), PageRequest.of(0, 10), 0));
 

@@ -197,7 +197,7 @@ class AnimeServiceTest {
   void findByGenreAndMinSeasons_cacheHit_skipRepository() {
     Pageable pageable = PageRequest.of(0, 5);
     AnimeSearchKey key = new AnimeSearchKey("Action", 1, 0, 5, pageable.getSort());
-    Page<AnimeDto> cached = new PageImpl<>(List.of(new AnimeDto(1L, "Solo Leveling", 1, "A-1", true, true)));
+    Page<AnimeDto> cached = new PageImpl<>(List.of(new AnimeDto(1L, "Solo Leveling", 1, "A-1", true, true, null)));
 
     when(searchCache.get(key)).thenReturn(cached);
 
@@ -228,7 +228,7 @@ class AnimeServiceTest {
   void findByGenreAndMinSeasonsNative_cacheHit_skipRepository() {
     Pageable pageable = PageRequest.of(0, 5);
     AnimeSearchKey key = new AnimeSearchKey("Fantasy", 3, 0, 5, pageable.getSort());
-    Page<AnimeDto> cached = new PageImpl<>(List.of(new AnimeDto(1L, "Solo Leveling", 1, "A-1", true, true)));
+    Page<AnimeDto> cached = new PageImpl<>(List.of(new AnimeDto(1L, "Solo Leveling", 1, "A-1", true, true, null)));
 
     when(searchCache.get(key)).thenReturn(cached);
 
