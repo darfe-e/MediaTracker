@@ -10,16 +10,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-            .allowedOriginPatterns(
-                "http://localhost:5173",
-                "http://localhost:*",
-                "https://*.vercel.app",
-                "https://mediatracker.vercel.app"
-            )
-            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-            .allowedHeaders("*")
-            .exposedHeaders("X-Data-Source", "X-Background-Update-TaskId")
-            .allowCredentials(false)
-            .maxAge(3600);
+            .allowedOrigins("https://mediatracker-84o.pages.dev", "http://localhost:5173")
+            .allowedMethods("GET", "POST", "PUT", "DELETE");
     }
 }
