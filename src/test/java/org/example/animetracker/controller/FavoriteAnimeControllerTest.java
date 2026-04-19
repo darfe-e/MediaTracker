@@ -80,7 +80,7 @@ class FavoriteAnimeControllerTest {
   @DisplayName("GET /users/{userId}/favorites/{animeId} — возвращает связь 200 OK")
   void getConnection_returnsOk() throws Exception {
     AnimeDetailedDto dto =
-        new AnimeDetailedDto(1L, "Naruto", 5, "Pierrot", List.of(), true, true);
+        new AnimeDetailedDto(1L, "Naruto", 5, "Pierrot", List.of(), true, true, null);
     when(favoriteAnimeService.getConnection(1L, 2L)).thenReturn(dto);
 
     mockMvc.perform(get("/users/1/favorites/2"))
@@ -90,7 +90,7 @@ class FavoriteAnimeControllerTest {
   @Test
   @DisplayName("POST /users/{userId}/favorites/{animeId} — добавляет аниме 201 Created")
   void addAnimeToCollection_returnsCreated() throws Exception {
-    AnimeDto animeDto = new AnimeDto(1L, "Naruto", 5, "Pierrot", true, true);
+    AnimeDto animeDto = new AnimeDto(1L, "Naruto", 5, "Pierrot", true, true, null);
     FavoriteAnimeDto dto = new FavoriteAnimeDto(10L, null, animeDto);
     when(favoriteAnimeService.addAnimeToCollection(2L, 1L)).thenReturn(dto);
 
@@ -101,7 +101,7 @@ class FavoriteAnimeControllerTest {
   @Test
   @DisplayName("POST /users/{userId}/favorites/bulk — пакетное добавление 201 Created")
   void addMultipleAnimesToCollection_returnsCreated() throws Exception {
-    AnimeDto animeDto = new AnimeDto(1L, "Naruto", 5, "Pierrot", true, true);
+    AnimeDto animeDto = new AnimeDto(1L, "Naruto", 5, "Pierrot", true, true, null);
     FavoriteAnimeDto dto = new FavoriteAnimeDto(10L, null, animeDto);
     when(favoriteAnimeService.addMultipleAnimesToCollectionBulk(anyLong(), any()))
         .thenReturn(List.of(dto));
