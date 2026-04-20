@@ -92,10 +92,12 @@ export default function AccountPage() {
               onKeyDown={e => e.key === 'Enter' && applyAvatar(avatarUrl)}
             />
             <button
-              className="btn btn-primary"
+              className={`btn ${avatarUrl.trim() ? 'btn-primary' : 'btn-disabled'}`} // Меняем класс в зависимости от текста
               onClick={() => applyAvatar(avatarUrl)}
               disabled={!avatarUrl.trim()}
-            >{saved ? '✓ Сохранено' : 'Применить'}</button>
+            >
+              {saved ? '✓ Сохранено' : 'Применить'}
+            </button>
           </div>
 
           {avatarUrl.trim() && previewOk && (
