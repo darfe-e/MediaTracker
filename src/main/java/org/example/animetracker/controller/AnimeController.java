@@ -7,7 +7,6 @@ import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.service.AnimeImportService;
 import org.example.animetracker.service.AnimeService;
-import org.example.animetracker.service.AsyncAnimeImportService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +30,11 @@ public class AnimeController implements AnimeControllerApi {
   public ResponseEntity<AnimeDetailedDto> getById(@PathVariable Long id) {
     AnimeDetailedDto dto = animeService.findByIdWithoutProblem(id);
     return ResponseEntity.ok(dto);
+  }
+
+  @GetMapping("/health")
+  public ResponseEntity<String> healthCheck() {
+    return ResponseEntity.ok("ALIVE"); // Возвращает статус 200 OK
   }
 
   @GetMapping

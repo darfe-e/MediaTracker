@@ -80,4 +80,6 @@ public interface AnimeRepository extends JpaRepository<Anime, Long>,
   List<Long> findExternalIdsByIsAnnounced(boolean isAnnounced);
 
   List<Anime> findTop10ByTitleContainingIgnoreCaseOrderByPopularityRankDesc(String title);
+
+  List<Anime> findTop30ByIsOngoingFalseAndIdGreaterThanOrderByIdAsc(Long id);
 }

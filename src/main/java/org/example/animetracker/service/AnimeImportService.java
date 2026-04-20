@@ -35,15 +35,17 @@ import org.example.animetracker.dto.external.AnilistRelationEdge;
 import org.example.animetracker.dto.external.AnilistStudioEdge;
 import org.example.animetracker.dto.external.AnilistStudios;
 import org.example.animetracker.exception.AnimeImportException;
-import org.example.animetracker.model.ImportTask;
 import org.example.animetracker.model.Anime;
+import org.example.animetracker.model.Episode;
 import org.example.animetracker.model.Season;
 import org.example.animetracker.model.Genre;
-import org.example.animetracker.model.Episode;
+import org.example.animetracker.model.SystemTask;
+import org.example.animetracker.model.ImportTask;
 import org.example.animetracker.repository.AnimeRepository;
 import org.example.animetracker.repository.EpisodeRepository;
 import org.example.animetracker.repository.GenreRepository;
 import org.example.animetracker.repository.SeasonRepository;
+import org.example.animetracker.repository.SystemTaskRepository;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -60,7 +62,7 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 @Service
 public class AnimeImportService {
-
+  private final SystemTaskRepository taskRepository;
   private final AnimeRepository animeRepository;
   private final GenreRepository genreRepository;
   private final SeasonRepository seasonRepository;
@@ -102,7 +104,8 @@ public class AnimeImportService {
                             RestTemplate restTemplate,
                             ObjectMapper objectMapper,
                             @Lazy AnimeImportService self,
-                            AnimeSearchCache searchCache) {
+                            AnimeSearchCache searchCache,
+                            SystemTaskRepository taskRepository) {
     this.animeRepository = animeRepository;
     this.genreRepository = genreRepository;
     this.seasonRepository = seasonRepository;
@@ -111,6 +114,7 @@ public class AnimeImportService {
     this.objectMapper = objectMapper;
     this.self = self;
     this.searchCache = searchCache;
+    this.taskRepository = taskRepository;
   }
 
   private ReentrantLock getFranchiseLock(AnilistMedia root) {
@@ -754,6 +758,19 @@ public class AnimeImportService {
   @Async("importExecutor")
   @Scheduled(cron = "0 0 */6 * * *") // каждые 6 часов
   public void refreshActiveAnime() {
+
+    String taskName = "ANIME_UPDATE";
+    LocalDateTime now = LocalDateTime.now();
+
+    SystemTask taskInfo = taskRepository.findById(taskName)
+        .orElse(new SystemTask(taskName, LocalDateTime.MIN));
+
+    long hoursPassed = java.time.Duration.between(taskInfo.getLastRun(), now).toHours();
+
+    if (hoursPassed < 6) {
+      log.info("Обновление пропущено. Прошло времени: {} ч.", hoursPassed);
+      return;
+    }
     log.info("=== Обновление онгоингов и анонсов ===");
 
     java.util.List<Long> ongoingIds = animeRepository.findExternalIdsByIsOngoing(true);
@@ -792,29 +809,57 @@ public class AnimeImportService {
         ongoingIds.size(), announcedIds.size());
   }
 
-  @Async("importExecutor")
-  @Scheduled(cron = "0 0 2 */5 * *") // каждые 5 дней в 2:00
+  @Scheduled(fixedRate = 3600000)
   public void refreshFinishedAnime() {
-    log.info("=== Обновление завершённых аниме ===");
-    LocalDateTime threshold = LocalDateTime.now().minusDays(5);
-    List<Long> staleIds = animeRepository
-        .findExternalIdsByIsOngoingFalseAndLastUpdatedBefore(threshold);
-    log.info("Устаревших записей: {}", staleIds.size());
+    String taskName = "REFRESH_FINISHED_ANIME";
 
-    staleIds.forEach(id -> {
+    SystemTask task = taskRepository.findById(taskName)
+        .orElse(new SystemTask(taskName, LocalDateTime.now().minusDays(6), 0L));
+
+    boolean isInProgress = task.getLastProcessedId() > 0;
+    boolean isTimeTodo = task.getLastRun().isBefore(LocalDateTime.now().minusDays(5));
+
+    if (!isTimeTodo && !isInProgress) {
+      return;
+    }
+
+    self.processBatchAsync(task);
+  }
+
+  @Async("importExecutor")
+  public void processBatchAsync(SystemTask task) {
+    log.info("=== Обновление завершённых аниме (пакет) ===");
+
+    List<Anime> batch = animeRepository
+        .findTop30ByIsOngoingFalseAndIdGreaterThanOrderByIdAsc(task.getLastProcessedId());
+
+    if (batch.isEmpty()) {
+      log.info("=== Обновление завершённых завершено полностью ===");
+      task.setLastProcessedId(0L);
+      task.setLastRun(LocalDateTime.now());
+      taskRepository.save(task);
+      return;
+    }
+
+    log.info("Устаревших записей в текущей пачке: {}", batch.size());
+
+    batch.forEach(anime -> {
       try {
-        AnilistMedia m = fetchAnilistByIdWithRetry(id);
+        AnilistMedia m = fetchAnilistByIdWithRetry(anime.getExternalId());
         if (m != null) {
-          processFranchise(m);
+          processFranchise(m);                                         // Твоя логика обработки
         }
-        Thread.sleep(2500); // медленнее — их много
+        task.setLastProcessedId(anime.getId());                          // Фиксируем прогресс в БД
+        Thread.sleep(2500);                                              // Твоя задержка
       } catch (InterruptedException ie) {
         Thread.currentThread().interrupt();
       } catch (Exception e) {
-        log.error("refreshFinished id={}: {}", id, e.getMessage());
+        log.error("refreshFinished id={}: {}", anime.getExternalId(), e.getMessage());
       }
     });
-    log.info("=== Обновление завершённых завершено ({}) ===", staleIds.size());
+
+    taskRepository.save(task);
+    log.info("=== Пакет завершён, ID остановки: {} ===", task.getLastProcessedId());
   }
 
   public void importPageFromAnilist(int page, int size) throws Exception {

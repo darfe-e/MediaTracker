@@ -1,7 +1,6 @@
 package org.example.animetracker.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -16,14 +15,10 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.example.animetracker.cache.AnimeSearchCache;
 import org.example.animetracker.dto.external.*;
-import org.example.animetracker.exception.AnimeImportException;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.model.ImportTask;
 import org.example.animetracker.model.Season;
-import org.example.animetracker.repository.AnimeRepository;
-import org.example.animetracker.repository.EpisodeRepository;
-import org.example.animetracker.repository.GenreRepository;
-import org.example.animetracker.repository.SeasonRepository;
+import org.example.animetracker.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,7 +27,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -44,6 +38,7 @@ import org.springframework.web.client.RestTemplate;
 @ExtendWith(MockitoExtension.class)
 class AnimeImportServiceTest {
 
+  @Mock private SystemTaskRepository taskRepository;
   @Mock private AnimeRepository    animeRepository;
   @Mock private GenreRepository    genreRepository;
   @Mock private SeasonRepository   seasonRepository;
@@ -339,7 +334,7 @@ class AnimeImportServiceTest {
     objectMapper = new ObjectMapper();
     service = new AnimeImportService(
         animeRepository, genreRepository, seasonRepository,
-        episodeRepository, restTemplate, objectMapper, self, searchCache);
+        episodeRepository, restTemplate, objectMapper, self, searchCache, taskRepository);
   }
 
   @Test
