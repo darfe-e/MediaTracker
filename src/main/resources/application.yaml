@@ -17,16 +17,16 @@ spring:
       hibernate:
         format_sql: true
 
-  logging:
-    level:
-      root: INFO
-      org.example.animetracker: DEBUG
-      org.springframework.web: WARN
-      org.hibernate: ERROR
-
   jackson:
     serialization:
       write-dates-as-timestamps: false
 
-  server:
-    port: ${PORT:8080}
+logging:
+  level:
+    root: INFO
+    org.example.animetracker: DEBUG
+    org.springframework.web: WARN
+    org.hibernate: ERROR
+
+server:
+  port: ${PORT:8080}
