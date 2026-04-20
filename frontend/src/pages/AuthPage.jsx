@@ -17,7 +17,6 @@ export default function AuthPage() {
     if (!name.trim() || !password.trim()) { setError('Заполните все поля'); return; }
     setLoading(true); setError('');
     try {
-      // 1. Пытаемся зарегистрировать (новый пользователь)
       const res = await registerUser({ name: name.trim(), password });
       login(res.data);
       navigate('/catalog');
@@ -25,7 +24,6 @@ export default function AuthPage() {
       const status  = err.response?.status;
       const message = String(err.response?.data?.message || err.response?.data || '');
 
-      // 2. Пользователь уже существует — входим через /users/login
       if (status === 400 && message.toLowerCase().includes('already')) {
         try {
           const loginRes = await loginUser({ name: name.trim(), password });
@@ -83,9 +81,6 @@ export default function AuthPage() {
             {loading ? 'Входим…' : 'Войти / Зарегистрироваться'}
           </button>
         </form>
-        <p className="auth-hint">
-          Новое имя → регистрация автоматически. Знакомое → вход.
-        </p>
       </div>
     </div>
   );
