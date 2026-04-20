@@ -1,0 +1,66 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Maven Build and Tests
+        run: mvn clean package
+
+  deploy:
+    name: Deploy to Render
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deployment
+        env:
+          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$deploy_url" ]; then
+            echo "Ошибка: Секрет RENDER_DEPLOY_HOOK_URL не задан!"
+            exit 1
+          fi
+          echo "Отправка запроса на деплой..."
+          curl -X POST "$deploy_url"
+
+  healthcheck:
+    name: Application Healthcheck
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for App to Boot
+        env:
+          APP_URL: ${{ secrets.RENDER_APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "Ошибка: Секрет RENDER_APP_URL не задан!"
+            exit 1
+          fi
+          
+          echo "Ожидание запуска приложения на $APP_URL..."
+          echo "Render собирает и запускает проект, это может занять 3-5 минут."
+          
+          # Пингуем приложение каждые 30 секунд в течение 10 минут
+          timeout 600s bash -c "
+            until curl -s -f \$APP_URL/anime-catalogue/health > /dev/null; do
+              echo 'Приложение еще не готово... Ждем 30 секунд.'
+              sleep 30
+            done
+            echo 'Healthcheck пройден! Приложение успешно запущено.'
+          "
