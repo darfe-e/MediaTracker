@@ -3,6 +3,7 @@ package org.example.animetracker.model;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,6 +39,7 @@ public class Season {
   private Long externalId;
 
   @OneToMany(mappedBy = "season", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("number ASC")
   private Set<Episode> episodes = new HashSet<>();
 
   @ManyToOne

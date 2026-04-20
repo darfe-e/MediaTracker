@@ -3,6 +3,7 @@ package org.example.animetracker.model;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -42,6 +43,7 @@ public class Anime {
   private String posterUrl;
 
   @OneToMany(mappedBy = "anime", cascade = CascadeType.ALL)
+  @OrderBy("number ASC")
   private Set<Season> seasons = new HashSet<>();
 
   private Integer popularityRank;
