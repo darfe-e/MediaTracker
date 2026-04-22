@@ -6,7 +6,6 @@ const api = axios.create({
 });
 const J = { 'Content-Type': 'application/json' };
 
-// ─── Auth / Users ─────────────────────────────────────────────────────────────
 export const registerUser = (dto) => api.post('/users/register', dto, { headers: J });
 export const loginUser    = (dto) => api.post('/users/login',    dto, { headers: J });
 export const deleteUser   = (id)  => api.delete(`/users/${id}`);

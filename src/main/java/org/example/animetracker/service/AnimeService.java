@@ -1,15 +1,12 @@
 package org.example.animetracker.service;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.animetracker.cache.AnimeSearchCache;
 import org.example.animetracker.cache.AnimeSearchKey;
 import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
+import org.example.animetracker.dto.EpisodeDto;
 import org.example.animetracker.mapper.AnimeMapper;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.repository.AnimeRepository;
@@ -21,6 +18,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.Collections;
 
 @Slf4j
 @AllArgsConstructor
@@ -38,9 +40,10 @@ public class AnimeService {
           dto.setSeasons(dto.getSeasons().stream()
               .filter(s -> !s.getEpisodes().isEmpty())
               .map(s -> {
-                s.getEpisodes().sort(
-                    Comparator.comparingInt(e -> e.getNumber() != null ? e.getNumber() : 0)
-                );
+                List<EpisodeDto> sorted = new ArrayList<>(s.getEpisodes());
+                sorted.sort(Comparator
+                    .comparingInt(e -> e.getNumber() != null ? e.getNumber() : 0));
+                s.setEpisodes(sorted);
                 return s;
               })
               .toList());
