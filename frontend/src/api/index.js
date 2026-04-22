@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: 'https://mediatracker-84o.pages.dev',
   withCredentials: false,
 });
 const J = { 'Content-Type': 'application/json' };
