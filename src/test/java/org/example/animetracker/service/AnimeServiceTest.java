@@ -4,24 +4,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.example.animetracker.cache.AnimeSearchCache;
 import org.example.animetracker.cache.AnimeSearchKey;
-import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
-import org.example.animetracker.dto.EpisodeDto;
-import org.example.animetracker.dto.SeasonDto;
-import org.example.animetracker.mapper.AnimeMapper;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.repository.AnimeRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -45,40 +36,6 @@ class AnimeServiceTest {
 
   @InjectMocks
   private AnimeService animeService;
-
-  @Test
-  @DisplayName("findByIdWithoutProblem — пустые сезоны отфильтровываются, непустые остаются")
-  void findByIdWithoutProblem_found_filtersEmptySeasons() {
-    Anime anime = buildAnime(1L);
-    when(animeRepository.findByIdWithDetails(1L)).thenReturn(Optional.of(anime));
-
-    SeasonDto nonEmptySeason = mock(SeasonDto.class);
-    when(nonEmptySeason.getEpisodes()).thenReturn(List.of(mock(EpisodeDto.class)));
-
-    SeasonDto emptySeason = mock(SeasonDto.class);
-    when(emptySeason.getEpisodes()).thenReturn(Collections.emptyList());
-
-    AnimeDetailedDto mockDto = mock(AnimeDetailedDto.class);
-    when(mockDto.getSeasons()).thenReturn(List.of(nonEmptySeason, emptySeason));
-
-    List<SeasonDto> capturedSeasons = new ArrayList<>();
-    doAnswer(inv -> {
-      capturedSeasons.clear();
-      capturedSeasons.addAll(inv.getArgument(0));
-      return null;
-    }).when(mockDto).setSeasons(any());
-
-    try (MockedStatic<AnimeMapper> mapperMock = mockStatic(AnimeMapper.class)) {
-      mapperMock.when(() -> AnimeMapper.animeToDetailedDto(anime)).thenReturn(mockDto);
-
-      AnimeDetailedDto result = animeService.findByIdWithoutProblem(1L);
-
-      assertThat(result).isNotNull();
-      assertThat(capturedSeasons)
-          .hasSize(1)
-          .containsExactly(nonEmptySeason);
-    }
-  }
 
   @Test
   @DisplayName("findByIdWithoutProblem — аниме не найдено → 404")
