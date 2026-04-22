@@ -1,12 +1,15 @@
 package org.example.animetracker.service;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Collections;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
+import org.example.animetracker.dto.EpisodeDto;
 import org.example.animetracker.dto.FavoriteAnimeDto;
 import org.example.animetracker.mapper.AnimeMapper;
 import org.example.animetracker.mapper.FavoriteAnimeMapper;
@@ -45,7 +48,17 @@ public class FavoriteAnimeService {
             "Favorite not found for user " + userId + " and anime " + animeId));
     Anime anime = favorite.getAnime();
     log.debug("Found favorite connection for user {} and anime {}", userId, animeId);
-    return AnimeMapper.animeToDetailedDto(anime);
+    AnimeDetailedDto dto = AnimeMapper.animeToDetailedDto(anime);
+    dto.setSeasons(dto.getSeasons().stream()
+        .filter(s -> !s.getEpisodes().isEmpty())
+        .map(s -> {
+          List<EpisodeDto> sorted = new ArrayList<>(s.getEpisodes());
+          sorted.sort(Comparator.comparingInt(e -> e.getNumber() != null ? e.getNumber() : 0));
+          s.setEpisodes(sorted);
+          return s;
+        })
+        .toList());
+    return dto;
   }
 
   public Page<AnimeDto> getOngoingInCollection(Long userId, Pageable pageable) {
