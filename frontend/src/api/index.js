@@ -15,6 +15,9 @@ export const getAnimeByStudio = (studio)      => api.get('/anime-catalogue', { p
 export const getAnimePage     = (page = 0, size = 21) =>
   api.get('/anime-catalogue/', { params: { page, size } });
 
+export const getSeasonEpisodes = (seasonId) =>
+  api.get(`/seasons/${seasonId}/episodes`);
+
 export const suggestAnime     = (q)  => api.get('/anime-catalogue/suggest', { params: { q } });
 
 export const searchAnime      = (title) => api.get('/anime-catalogue/search', { params: { title } });

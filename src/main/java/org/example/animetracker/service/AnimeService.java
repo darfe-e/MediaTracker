@@ -36,19 +36,6 @@ public class AnimeService {
   public AnimeDetailedDto findByIdWithoutProblem(Long id) {
     return animeRepository.findByIdWithDetails(id)
         .map(AnimeMapper::animeToDetailedDto)
-        .map(dto -> {
-          dto.setSeasons(dto.getSeasons().stream()
-              .filter(s -> !s.getEpisodes().isEmpty())
-              .map(s -> {
-                List<EpisodeDto> sorted = new ArrayList<>(s.getEpisodes());
-                sorted.sort(Comparator
-                    .comparingInt(e -> e.getNumber() != null ? e.getNumber() : 0));
-                s.setEpisodes(sorted);
-                return s;
-              })
-              .toList());
-          return dto;
-        })
         .orElseThrow(() -> new ResponseStatusException(
             HttpStatus.NOT_FOUND, "Anime not found with id: " + id));
   }

@@ -24,9 +24,29 @@ function getLabel(season, realSeasonNumber) {
 
 function SeasonBlock({ season, realSeasonNumber }) {
   const [open, setOpen] = useState(false);
-  const episodes = season.episodes ?? [];
-  const type     = classifyEntry(season);
-  const label    = getLabel(season, realSeasonNumber);
+  const [episodes, setEpisodes] = useState(null);
+  const [loadingEps, setLoadingEps] = useState(false);
+
+  const type = classifyEntry(season);
+  const label = getLabel(season, realSeasonNumber);
+
+  const handleToggle = async () => {
+    const next = !open;
+    setOpen(next);
+
+    if (next && episodes === null) {
+      setLoadingEps(true);
+      try {
+        const res = await getSeasonEpisodes(season.id);
+        // Используем res.data, как указано в инструкции
+        setEpisodes(res.data);
+      } catch {
+        setEpisodes([]);
+      } finally {
+        setLoadingEps(false);
+      }
+    }
+  };
 
   if (type === 'ova' || type === 'special') {
     return (
@@ -45,31 +65,41 @@ function SeasonBlock({ season, realSeasonNumber }) {
 
   return (
     <div className="season-block">
-      <button className="season-header" onClick={() => setOpen(o => !o)}>
+      <button className="season-header" onClick={handleToggle}>
         <span className="season-title">{label}</span>
         <span className="season-meta">
           {season.releaseDate && new Date(season.releaseDate).getFullYear()}
           {season.releaseDate ? ' · ' : ''}
           {season.isReleased ? '✅ Вышел' : '⏳ Ожидается'}
-          {' · '}{episodes.length} эп.
+          {episodes !== null && ` · ${episodes.length} эп.`}
         </span>
         <span className="season-toggle">{open ? '▲' : '▼'}</span>
       </button>
+
       {open && (
-        <ul className="episode-list">
-          {episodes.length === 0
-            ? <li className="episode-item ep-empty">Нет данных</li>
-            : episodes.map(ep => (
-                <li key={ep.number} className="episode-item">
-                  <span className="ep-num">#{ep.number}</span>
-                  <span className="ep-title">{ep.title || 'Без названия'}</span>
-                  {ep.releaseDate && (
-                    <span className="ep-date">{new Date(ep.releaseDate).toLocaleDateString('ru-RU')}</span>
-                  )}
-                </li>
-              ))
-          }
-        </ul>
+        <div className="season-content">
+          {loadingEps ? (
+            <div className="episodes-loader">Загрузка серий...</div>
+          ) : (
+            <ul className="episode-list">
+              {!episodes || episodes.length === 0 ? (
+                <li className="episode-item ep-empty">Нет данных</li>
+              ) : (
+                episodes.map((ep) => (
+                  <li key={ep.number} className="episode-item">
+                    <span className="ep-num">#{ep.number}</span>
+                    <span className="ep-title">{ep.title || 'Без названия'}</span>
+                    {ep.releaseDate && (
+                      <span className="ep-date">
+                        {new Date(ep.releaseDate).toLocaleDateString('ru-RU')}
+                      </span>
+                    )}
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );

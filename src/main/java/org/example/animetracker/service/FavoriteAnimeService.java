@@ -50,13 +50,6 @@ public class FavoriteAnimeService {
     log.debug("Found favorite connection for user {} and anime {}", userId, animeId);
     AnimeDetailedDto dto = AnimeMapper.animeToDetailedDto(anime);
     dto.setSeasons(dto.getSeasons().stream()
-        .filter(s -> !s.getEpisodes().isEmpty())
-        .map(s -> {
-          List<EpisodeDto> sorted = new ArrayList<>(s.getEpisodes());
-          sorted.sort(Comparator.comparingInt(e -> e.getNumber() != null ? e.getNumber() : 0));
-          s.setEpisodes(sorted);
-          return s;
-        })
         .toList());
     return dto;
   }
