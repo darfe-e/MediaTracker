@@ -8,7 +8,6 @@ import './AnimeDetailPage.css';
 const PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='340'%3E%3Crect width='240' height='340' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' font-size='48' text-anchor='middle' dominant-baseline='middle' fill='%23333'%3E%E2%9B%A9%3C/text%3E%3C/svg%3E";
 const fixUrl = (u) => u ? u.replace(/^http:\/\//i, 'https://') : PH;
 
-// Классифицируем запись: сезон / OVA / Фильм / Спецвыпуск
 function classifyEntry(season) {
   const epCount = season.episodes?.length ?? 0;
   if (epCount === 0) return 'special';   // спецвыпуск без эпизодов
@@ -16,7 +15,6 @@ function classifyEntry(season) {
   return 'season';
 }
 
-// Возвращаем лейбл без номера для OVA/спецов
 function getLabel(season, realSeasonNumber) {
   const type = classifyEntry(season);
   if (type === 'special') return 'Спецвыпуск';
@@ -26,11 +24,10 @@ function getLabel(season, realSeasonNumber) {
 
 function SeasonBlock({ season, realSeasonNumber }) {
   const [open, setOpen] = useState(false);
-  const episodes = [...(season.episodes ?? [])].sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
+  const episodes = season.episodes ?? [];
   const type     = classifyEntry(season);
   const label    = getLabel(season, realSeasonNumber);
 
-  // OVA/Фильм с 1 эпизодом — не разворачиваем, просто показываем строку
   if (type === 'ova' || type === 'special') {
     return (
       <div className="season-block season-block--compact">
@@ -142,7 +139,6 @@ export default function AnimeDetailPage() {
     </AppLayout>
   );
 
-  // Сортируем по дате
   const seasons = [...(anime.seasons ?? [])].sort((a, b) => {
     if (!a.releaseDate && !b.releaseDate) return 0;
     if (!a.releaseDate) return 1;
@@ -150,16 +146,13 @@ export default function AnimeDetailPage() {
     return new Date(a.releaseDate) - new Date(b.releaseDate);
   });
 
-  // Считаем счётчик настоящих сезонов отдельно
   let realSeasonCount = 0;
   const seasonNumbers = seasons.map(s => {
     if (classifyEntry(s) === 'season') { realSeasonCount++; return realSeasonCount; }
     return null;
   });
 
-  // Для метаданных — используем numOfReleasedSeasons с бэкенда (авторитетный источник)
   const displaySeasons  = anime.numOfReleasedSeasons ?? realSeasonCount;
-  // Эпизоды считаем только из настоящих сезонов (>1 эп), иначе число раздуется
   const totalEp = seasons
     .filter(s => classifyEntry(s) === 'season')
     .reduce((sum, s) => sum + (s.episodes?.length ?? 0), 0);

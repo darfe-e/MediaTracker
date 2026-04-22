@@ -1,6 +1,7 @@
 package org.example.animetracker.service;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
@@ -36,6 +37,12 @@ public class AnimeService {
         .map(dto -> {
           dto.setSeasons(dto.getSeasons().stream()
               .filter(s -> !s.getEpisodes().isEmpty())
+              .map(s -> {
+                s.getEpisodes().sort(
+                    Comparator.comparingInt(e -> e.getNumber() != null ? e.getNumber() : 0)
+                );
+                return s;
+              })
               .toList());
           return dto;
         })
