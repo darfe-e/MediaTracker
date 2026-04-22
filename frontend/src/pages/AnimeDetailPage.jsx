@@ -30,8 +30,13 @@ function SeasonBlock({ season, realSeasonNumber }) {
   const type = classifyEntry(season);
   const label = getLabel(season, realSeasonNumber);
 
-  // Если это OVA, Фильм или Спецвыпуск — возвращаем простую плашку без логики раскрытия
-  if (type === 'ova' || type === 'movie' || type === 'special') {
+  // Уточняем: является ли это контентом, который ТОЧНО не надо раскрывать
+  // Если label содержит "Сезон", мы его раскроем в любом случае
+  const isStaticType = type === 'ova' || type === 'movie' || type === 'special';
+  const isActuallySeason = label.toLowerCase().includes('сезон');
+
+  // Если это статика (спецвыпуск/фильм) И в названии нет слова "Сезон" — не раскрываем
+  if (isStaticType && !isActuallySeason) {
     return (
       <div className="season-block season-block--compact">
         <div className="season-header season-header--flat">
@@ -46,7 +51,6 @@ function SeasonBlock({ season, realSeasonNumber }) {
     );
   }
 
-  // Логика только для полноценных сезонов
   const handleToggle = async () => {
     const next = !open;
     setOpen(next);
@@ -54,10 +58,11 @@ function SeasonBlock({ season, realSeasonNumber }) {
     if (next && episodes === null) {
       setLoadingEps(true);
       try {
-        // Запрос к SeasonController
+        // Запрос к твоему SeasonController
         const res = await getSeasonEpisodes(season.id);
         setEpisodes(res.data);
       } catch (err) {
+        console.error("Ошибка:", err);
         setEpisodes([]);
       } finally {
         setLoadingEps(false);
