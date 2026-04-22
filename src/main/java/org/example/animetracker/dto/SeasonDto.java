@@ -12,4 +12,6 @@ public class SeasonDto {
   private Long id;
   private LocalDate releaseDate;
   private Boolean isReleased;
+  private Integer totalEpisodes;
+  private String format;
 }

@@ -14,7 +14,9 @@ public class SeasonMapper {
     return new SeasonDto(
         season.getId(),
         season.getReleaseDate(),
-        season.getIsReleased()
+        season.getIsReleased(),
+        season.getTotalEpisodes(),
+        season.getFormat()
     );
   }
 }

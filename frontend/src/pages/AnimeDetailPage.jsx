@@ -27,42 +27,29 @@ function SeasonBlock({ season, realSeasonNumber }) {
   const [episodes, setEpisodes] = useState(null);
   const [loadingEps, setLoadingEps] = useState(false);
 
-  const type = classifyEntry(season);
+  // Используем format из базы для определения типа
+  const format = season.format?.toLowerCase() || 'special';
   const label = getLabel(season, realSeasonNumber);
 
-  // Уточняем: является ли это контентом, который ТОЧНО не надо раскрывать
-  // Если label содержит "Сезон", мы его раскроем в любом случае
-  const isStaticType = type === 'ova' || type === 'movie' || type === 'special';
-  const isActuallySeason = label.toLowerCase().includes('сезон');
-
-  // Если это статика (спецвыпуск/фильм) И в названии нет слова "Сезон" — не раскрываем
-  if (isStaticType && !isActuallySeason) {
-    return (
-      <div className="season-block season-block--compact">
-        <div className="season-header season-header--flat">
-          <span className="season-title season-title--muted">{label}</span>
-          <span className="season-meta">
-            {season.releaseDate && new Date(season.releaseDate).getFullYear()}
-            {season.releaseDate ? ' · ' : ''}
-            {season.isReleased ? '✅' : '⏳'}
-          </span>
-        </div>
-      </div>
-    );
-  }
+  // Условие раскрытия:
+  // 1. Формат 'tv' (даже если 1 серия)
+  // 2. Или если серий больше одной (например, OVA из 3 частей)
+  const isExpandable = format === 'tv' || (season.totalEpisodes > 1);
 
   const handleToggle = async () => {
+    if (!isExpandable) return;
+
     const next = !open;
     setOpen(next);
 
     if (next && episodes === null) {
       setLoadingEps(true);
       try {
-        // Запрос к твоему SeasonController
+        // Запрос к эндпоинту /seasons/{id}/episodes
         const res = await getSeasonEpisodes(season.id);
         setEpisodes(res.data);
       } catch (err) {
-        console.error("Ошибка:", err);
+        console.error("Ошибка загрузки:", err);
         setEpisodes([]);
       } finally {
         setLoadingEps(false);
@@ -70,15 +57,31 @@ function SeasonBlock({ season, realSeasonNumber }) {
     }
   };
 
+  // Если не раскрывается (фильм/одиночная ова) — рисуем простую плашку
+  if (!isExpandable) {
+    return (
+      <div className="season-block season-block--compact">
+        <div className="season-header season-header--flat">
+          <span className="season-title season-title--muted">{label}</span>
+          <span className="season-meta">
+            {season.releaseDate && new Date(season.releaseDate).getFullYear()}
+            {season.totalEpisodes ? ` · ${season.totalEpisodes} эп.` : ''}
+            {season.isReleased ? ' ✅' : ' ⏳'}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Обычный раскрывающийся сезон
   return (
-    <div className="season-block">
+    <div className={`season-block ${open ? 'season-block--open' : ''}`}>
       <button className="season-header" onClick={handleToggle}>
         <span className="season-title">{label}</span>
         <span className="season-meta">
           {season.releaseDate && new Date(season.releaseDate).getFullYear()}
-          {season.releaseDate ? ' · ' : ''}
-          {season.isReleased ? '✅ Вышел' : '⏳ Ожидается'}
-          {episodes !== null && ` · ${episodes.length} эп.`}
+          {` · ${season.totalEpisodes || 0} эп.`}
+          {season.isReleased ? ' ✅' : ' ⏳'}
         </span>
         <span className="season-toggle">{open ? '▲' : '▼'}</span>
       </button>
@@ -86,11 +89,11 @@ function SeasonBlock({ season, realSeasonNumber }) {
       {open && (
         <div className="season-content">
           {loadingEps ? (
-            <div className="episodes-loader">Загрузка серий...</div>
+            <div className="episodes-loader">Загрузка...</div>
           ) : (
             <ul className="episode-list">
               {!episodes || episodes.length === 0 ? (
-                <li className="episode-item ep-empty">Нет данных</li>
+                <li className="episode-item ep-empty">Список серий пуст</li>
               ) : (
                 episodes.map((ep) => (
                   <li key={ep.number} className="episode-item">
