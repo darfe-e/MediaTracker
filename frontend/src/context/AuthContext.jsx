@@ -2,10 +2,6 @@ import { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext(null);
 
-// ── Реестр пользователей в localStorage ─────────────────────────────────────
-// Сохраняем {name → UserDto} чтобы "войти" при повторном визите.
-// Без этого при ошибке "already taken" нет способа получить ID из бэкенда
-// (нет отдельного /login эндпоинта).
 const REGISTRY_KEY = 'anime_user_registry';
 const SESSION_KEY  = 'anime_user';
 

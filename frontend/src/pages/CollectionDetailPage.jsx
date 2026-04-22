@@ -9,8 +9,16 @@ import './CollectionDetailPage.css';
 const PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='310'%3E%3Crect width='220' height='310' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' font-size='48' text-anchor='middle' dominant-baseline='middle' fill='%23333'%3E%E2%9B%A9%3C/text%3E%3C/svg%3E";
 const fixUrl = (u) => u ? u.replace(/^http:\/\//i, 'https://') : PH;
 
+/**
+ * Классификация по format (из нового SeasonDto) + fallback по totalEpisodes.
+ * Та же логика что в AnimeDetailPage.
+ */
 function classifyEntry(season) {
-  const n = season.episodes?.length ?? 0;
+  const fmt = season.format?.toUpperCase();
+  if (fmt === 'TV' || fmt === 'TV_SHORT' || fmt === 'ONA') return 'season';
+  if (fmt === 'OVA' || fmt === 'MOVIE')                    return 'ova';
+  if (fmt === 'SPECIAL')                                   return 'special';
+  const n = season.totalEpisodes ?? 0;
   if (n === 0) return 'special';
   if (n === 1) return 'ova';
   return 'season';
@@ -54,6 +62,7 @@ export default function CollectionDetailPage() {
     </AppLayout>
   );
 
+  // Сортируем по дате
   const seasons = [...(anime.seasons ?? [])].sort((a, b) => {
     if (!a.releaseDate && !b.releaseDate) return 0;
     if (!a.releaseDate) return 1;
@@ -61,7 +70,7 @@ export default function CollectionDetailPage() {
     return new Date(a.releaseDate) - new Date(b.releaseDate);
   });
 
-  // Нумеруем только настоящие сезоны
+  // Нумеруем только TV-сезоны
   let realNum = 0;
   const seasonLabels = seasons.map(s => {
     const type = classifyEntry(s);
@@ -71,9 +80,10 @@ export default function CollectionDetailPage() {
   });
 
   const displaySeasons = anime.numOfReleasedSeasons ?? realNum;
+  // Эпизоды — только TV-сезоны, поле totalEpisodes (episodes больше нет в DTO)
   const totalEp = seasons
     .filter(s => classifyEntry(s) === 'season')
-    .reduce((s, se) => s + (se.episodes?.length ?? 0), 0);
+    .reduce((sum, s) => sum + (s.totalEpisodes ?? 0), 0);
 
   return (
     <AppLayout title={anime.title}>
@@ -96,41 +106,57 @@ export default function CollectionDetailPage() {
             </div>
             <h1 className="coll-detail__title">{anime.title}</h1>
             {anime.studio && <p className="coll-detail__studio">{anime.studio}</p>}
+
             <div className="coll-detail__meta">
               {displaySeasons != null && (
-                <div className="meta-item"><span className="meta-label">Сезонов</span><span>{displaySeasons}</span></div>
+                <div className="meta-item">
+                  <span className="meta-label">Сезонов</span>
+                  <span>{displaySeasons}</span>
+                </div>
               )}
               {totalEp > 0 && (
-                <div className="meta-item"><span className="meta-label">Эпизодов</span><span>{totalEp}</span></div>
+                <div className="meta-item">
+                  <span className="meta-label">Эпизодов</span>
+                  <span>{totalEp}</span>
+                </div>
               )}
               {review?.assessment != null && (
-                <div className="meta-item"><span className="meta-label">Моя оценка</span><span style={{ color: 'var(--yellow)' }}>★ {review.assessment.toFixed(1)}</span></div>
+                <div className="meta-item">
+                  <span className="meta-label">Моя оценка</span>
+                  <span style={{ color: 'var(--yellow)' }}>★ {review.assessment.toFixed(1)}</span>
+                </div>
               )}
             </div>
+
             <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
               <button className="btn btn-ghost" onClick={() => navigate(`/anime/${animeId}`)}>
                 📖 Полная информация
               </button>
-              <button className="btn btn-danger" onClick={handleRemove}>✕ Убрать из коллекции</button>
+              <button className="btn btn-danger" onClick={handleRemove}>
+                ✕ Убрать из коллекции
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Сезоны — только реальные, OVA компактно */}
+        {/* Сезоны — плитки: TV нумеруются, OVA/Спецвыпуск подписываются отдельно */}
         {seasons.length > 0 && (
           <section className="coll-detail__seasons">
             <h2 className="section-heading">Сезоны</h2>
             <div className="seasons-grid">
               {seasons.map((s, i) => {
                 const type = classifyEntry(s);
-                const epCount = s.episodes?.length ?? 0;
+                const epCount = s.totalEpisodes ?? 0;
                 return (
-                  <div key={i} className={`season-card ${s.isReleased ? 'season-card--released' : ''} ${type !== 'season' ? 'season-card--ova' : ''}`}>
+                  <div key={s.id ?? i}
+                    className={`season-card ${s.isReleased ? 'season-card--released' : ''} ${type !== 'season' ? 'season-card--ova' : ''}`}>
                     <div className="season-card__num">{seasonLabels[i]}</div>
                     <div className="season-card__year">
                       {s.releaseDate ? new Date(s.releaseDate).getFullYear() : '?'}
                     </div>
-                    {type === 'season' && <div className="season-card__episodes">{epCount} эп.</div>}
+                    {type === 'season' && epCount > 0 && (
+                      <div className="season-card__episodes">{epCount} эп.</div>
+                    )}
                     <div className={`season-card__status ${s.isReleased ? 'released' : 'pending'}`}>
                       {s.isReleased ? '✓' : '⏳'}
                     </div>

@@ -1,16 +1,7 @@
 import { t as __commonJSMin } from "./chunk-BoAXSpZd.js";
 import { t as require_react } from "./react.js";
 import { t as require_react_dom } from "./react-dom-1BZaRNvX.js";
-//#region node_modules/scheduler/cjs/scheduler.development.js
-/**
-* @license React
-* scheduler.development.js
-*
-* Copyright (c) Meta Platforms, Inc. and affiliates.
-*
-* This source code is licensed under the MIT license found in the
-* LICENSE file in the root directory of this source tree.
-*/
+
 var require_scheduler_development = /* @__PURE__ */ __commonJSMin(((exports) => {
 	(function() {
 		function performWorkUntilDeadline() {
@@ -248,17 +239,7 @@ var require_scheduler_development = /* @__PURE__ */ __commonJSMin(((exports) => 
 var require_scheduler = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	module.exports = require_scheduler_development();
 }));
-//#endregion
-//#region node_modules/react-dom/cjs/react-dom-client.development.js
-/**
-* @license React
-* react-dom-client.development.js
-*
-* Copyright (c) Meta Platforms, Inc. and affiliates.
-*
-* This source code is licensed under the MIT license found in the
-* LICENSE file in the root directory of this source tree.
-*/
+
 var require_react_dom_client_development = /* @__PURE__ */ __commonJSMin(((exports) => {
 	(function() {
 		function findHook(fiber, id) {

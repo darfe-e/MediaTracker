@@ -3,16 +3,7 @@ import { t as require_react } from "./react.js";
 import { t as require_react_dom } from "./react-dom-1BZaRNvX.js";
 //#region node_modules/react-router/dist/development/chunk-QFMPRPBF.mjs
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
-/**
-* react-router v7.14.0
-*
-* Copyright (c) Remix Software Inc.
-*
-* This source code is licensed under the MIT license found in the
-* LICENSE.md file in the root directory of this source tree.
-*
-* @license MIT
-*/
+
 var __typeError = (msg) => {
 	throw TypeError(msg);
 };

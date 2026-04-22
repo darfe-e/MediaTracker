@@ -1,14 +1,5 @@
 import { t as __commonJSMin } from "./chunk-BoAXSpZd.js";
-//#region node_modules/react/cjs/react.development.js
-/**
-* @license React
-* react.development.js
-*
-* Copyright (c) Meta Platforms, Inc. and affiliates.
-*
-* This source code is licensed under the MIT license found in the
-* LICENSE file in the root directory of this source tree.
-*/
+
 var require_react_development = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	(function() {
 		function defineDeprecationWarning(methodName, info) {

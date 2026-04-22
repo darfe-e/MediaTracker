@@ -104,3 +104,11 @@
   padding: 10px 18px; cursor: default;
 }
 .season-title--muted { color: var(--text-muted); font-style: italic; }
+
+.episodes-loader {
+  padding: 14px 20px;
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 14px;
+  border-top: 1px solid var(--border);
+}

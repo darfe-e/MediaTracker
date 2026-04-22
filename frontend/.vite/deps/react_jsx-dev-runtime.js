@@ -1,15 +1,6 @@
 import { t as __commonJSMin } from "./chunk-BoAXSpZd.js";
 import { t as require_react } from "./react.js";
-//#region node_modules/react/cjs/react-jsx-dev-runtime.development.js
-/**
-* @license React
-* react-jsx-dev-runtime.development.js
-*
-* Copyright (c) Meta Platforms, Inc. and affiliates.
-*
-* This source code is licensed under the MIT license found in the
-* LICENSE file in the root directory of this source tree.
-*/
+
 var require_react_jsx_dev_runtime_development = /* @__PURE__ */ __commonJSMin(((exports) => {
 	(function() {
 		function getComponentNameFromType(type) {

@@ -1,19 +1,10 @@
 import { n as __exportAll } from "./chunk-BoAXSpZd.js";
-//#region node_modules/axios/lib/helpers/bind.js
-/**
-* Create a bound version of a function with a specified `this` context
-*
-* @param {Function} fn - The function to bind
-* @param {*} thisArg - The value to be passed as the `this` parameter
-* @returns {Function} A new function that will call the original function with the specified `this` context
-*/
+
 function bind(fn, thisArg) {
 	return function wrap() {
 		return fn.apply(thisArg, arguments);
 	};
 }
-//#endregion
-//#region node_modules/axios/lib/utils.js
 var { toString } = Object.prototype;
 var { getPrototypeOf } = Object;
 var { iterator, toStringTag } = Symbol;
@@ -26,110 +17,40 @@ var kindOfTest = (type) => {
 	return (thing) => kindOf(thing) === type;
 };
 var typeOfTest = (type) => (thing) => typeof thing === type;
-/**
-* Determine if a value is a non-null object
-*
-* @param {Object} val The value to test
-*
-* @returns {boolean} True if value is an Array, otherwise false
-*/
+
 var { isArray } = Array;
-/**
-* Determine if a value is undefined
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if the value is undefined, otherwise false
-*/
+
 var isUndefined = typeOfTest("undefined");
-/**
-* Determine if a value is a Buffer
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is a Buffer, otherwise false
-*/
+
 function isBuffer(val) {
 	return val !== null && !isUndefined(val) && val.constructor !== null && !isUndefined(val.constructor) && isFunction$1(val.constructor.isBuffer) && val.constructor.isBuffer(val);
 }
-/**
-* Determine if a value is an ArrayBuffer
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is an ArrayBuffer, otherwise false
-*/
+
 var isArrayBuffer = kindOfTest("ArrayBuffer");
-/**
-* Determine if a value is a view on an ArrayBuffer
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is a view on an ArrayBuffer, otherwise false
-*/
+
 function isArrayBufferView(val) {
 	let result;
 	if (typeof ArrayBuffer !== "undefined" && ArrayBuffer.isView) result = ArrayBuffer.isView(val);
 	else result = val && val.buffer && isArrayBuffer(val.buffer);
 	return result;
 }
-/**
-* Determine if a value is a String
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is a String, otherwise false
-*/
+
 var isString = typeOfTest("string");
-/**
-* Determine if a value is a Function
-*
-* @param {*} val The value to test
-* @returns {boolean} True if value is a Function, otherwise false
-*/
+
 var isFunction$1 = typeOfTest("function");
-/**
-* Determine if a value is a Number
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is a Number, otherwise false
-*/
+
 var isNumber = typeOfTest("number");
-/**
-* Determine if a value is an Object
-*
-* @param {*} thing The value to test
-*
-* @returns {boolean} True if value is an Object, otherwise false
-*/
+
 var isObject = (thing) => thing !== null && typeof thing === "object";
-/**
-* Determine if a value is a Boolean
-*
-* @param {*} thing The value to test
-* @returns {boolean} True if value is a Boolean, otherwise false
-*/
+
 var isBoolean = (thing) => thing === true || thing === false;
-/**
-* Determine if a value is a plain Object
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is a plain Object, otherwise false
-*/
+
 var isPlainObject = (val) => {
 	if (kindOf(val) !== "object") return false;
 	const prototype = getPrototypeOf(val);
 	return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null) && !(toStringTag in val) && !(iterator in val);
 };
-/**
-* Determine if a value is an empty object (safely handles Buffers)
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is an empty object, otherwise false
-*/
+
 var isEmptyObject = (val) => {
 	if (!isObject(val) || isBuffer(val)) return false;
 	try {
@@ -138,76 +59,23 @@ var isEmptyObject = (val) => {
 		return false;
 	}
 };
-/**
-* Determine if a value is a Date
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is a Date, otherwise false
-*/
+
 var isDate = kindOfTest("Date");
-/**
-* Determine if a value is a File
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is a File, otherwise false
-*/
+
 var isFile = kindOfTest("File");
-/**
-* Determine if a value is a React Native Blob
-* React Native "blob": an object with a `uri` attribute. Optionally, it can
-* also have a `name` and `type` attribute to specify filename and content type
-*
-* @see https://github.com/facebook/react-native/blob/26684cf3adf4094eb6c405d345a75bf8c7c0bf88/Libraries/Network/FormData.js#L68-L71
-* 
-* @param {*} value The value to test
-* 
-* @returns {boolean} True if value is a React Native Blob, otherwise false
-*/
+
 var isReactNativeBlob = (value) => {
 	return !!(value && typeof value.uri !== "undefined");
 };
-/**
-* Determine if environment is React Native
-* ReactNative `FormData` has a non-standard `getParts()` method
-* 
-* @param {*} formData The formData to test
-* 
-* @returns {boolean} True if environment is React Native, otherwise false
-*/
+
 var isReactNative = (formData) => formData && typeof formData.getParts !== "undefined";
-/**
-* Determine if a value is a Blob
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is a Blob, otherwise false
-*/
+
 var isBlob = kindOfTest("Blob");
-/**
-* Determine if a value is a FileList
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is a File, otherwise false
-*/
+
 var isFileList = kindOfTest("FileList");
-/**
-* Determine if a value is a Stream
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is a Stream, otherwise false
-*/
+
 var isStream = (val) => isObject(val) && isFunction$1(val.pipe);
-/**
-* Determine if a value is a FormData
-*
-* @param {*} thing The value to test
-*
-* @returns {boolean} True if value is an FormData, otherwise false
-*/
+
 function getGlobal() {
 	if (typeof globalThis !== "undefined") return globalThis;
 	if (typeof self !== "undefined") return self;
@@ -221,13 +89,7 @@ var isFormData = (thing) => {
 	let kind;
 	return thing && (FormDataCtor && thing instanceof FormDataCtor || isFunction$1(thing.append) && ((kind = kindOf(thing)) === "formdata" || kind === "object" && isFunction$1(thing.toString) && thing.toString() === "[object FormData]"));
 };
-/**
-* Determine if a value is a URLSearchParams object
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is a URLSearchParams object, otherwise false
-*/
+
 var isURLSearchParams = kindOfTest("URLSearchParams");
 var [isReadableStream, isRequest, isResponse, isHeaders] = [
 	"ReadableStream",
@@ -235,32 +97,11 @@ var [isReadableStream, isRequest, isResponse, isHeaders] = [
 	"Response",
 	"Headers"
 ].map(kindOfTest);
-/**
-* Trim excess whitespace off the beginning and end of a string
-*
-* @param {String} str The String to trim
-*
-* @returns {String} The String freed of excess whitespace
-*/
+
 var trim = (str) => {
 	return str.trim ? str.trim() : str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, "");
 };
-/**
-* Iterate over an Array or an Object invoking a function for each item.
-*
-* If `obj` is an Array callback will be called passing
-* the value, index, and complete array for each item.
-*
-* If 'obj' is an Object callback will be called passing
-* the value, key, and complete object for each property.
-*
-* @param {Object|Array<unknown>} obj The object to iterate
-* @param {Function} fn The callback to invoke for each item
-*
-* @param {Object} [options]
-* @param {Boolean} [options.allOwnKeys = false]
-* @returns {any}
-*/
+
 function forEach(obj, fn, { allOwnKeys = false } = {}) {
 	if (obj === null || typeof obj === "undefined") return;
 	let i;
@@ -278,14 +119,7 @@ function forEach(obj, fn, { allOwnKeys = false } = {}) {
 		}
 	}
 }
-/**
-* Finds a key in an object, case-insensitive, returning the actual key name.
-* Returns null if the object is a Buffer or if no match is found.
-*
-* @param {Object} obj - The object to search.
-* @param {string} key - The key to find (case-insensitive).
-* @returns {?string} The actual key name if found, otherwise null.
-*/
+
 function findKey(obj, key) {
 	if (isBuffer(obj)) return null;
 	key = key.toLowerCase();
@@ -303,24 +137,7 @@ var _global = (() => {
 	return typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : global;
 })();
 var isContextDefined = (context) => !isUndefined(context) && context !== _global;
-/**
-* Accepts varargs expecting each argument to be an object, then
-* immutably merges the properties of each object and returns result.
-*
-* When multiple objects contain the same key the later object in
-* the arguments list will take precedence.
-*
-* Example:
-*
-* ```js
-* const result = merge({foo: 123}, {foo: 456});
-* console.log(result.foo); // outputs 456
-* ```
-*
-* @param {Object} obj1 Object to merge
-*
-* @returns {Object} Result of all merge properties
-*/
+
 function merge() {
 	const { caseless, skipUndefined } = isContextDefined(this) && this || {};
 	const result = {};
@@ -335,17 +152,7 @@ function merge() {
 	for (let i = 0, l = arguments.length; i < l; i++) arguments[i] && forEach(arguments[i], assignValue);
 	return result;
 }
-/**
-* Extends object a by mutably adding to it the properties of object b.
-*
-* @param {Object} a The object to be extended
-* @param {Object} b The object to copy properties from
-* @param {Object} thisArg The object to bind function to
-*
-* @param {Object} [options]
-* @param {Boolean} [options.allOwnKeys]
-* @returns {Object} The resulting value of object a
-*/
+
 var extend = (a, b, thisArg, { allOwnKeys } = {}) => {
 	forEach(b, (val, key) => {
 		if (thisArg && isFunction$1(val)) Object.defineProperty(a, key, {
@@ -363,26 +170,12 @@ var extend = (a, b, thisArg, { allOwnKeys } = {}) => {
 	}, { allOwnKeys });
 	return a;
 };
-/**
-* Remove byte order marker. This catches EF BB BF (the UTF-8 BOM)
-*
-* @param {string} content with BOM
-*
-* @returns {string} content value without BOM
-*/
+
 var stripBOM = (content) => {
 	if (content.charCodeAt(0) === 65279) content = content.slice(1);
 	return content;
 };
-/**
-* Inherit the prototype methods from one constructor into another
-* @param {function} constructor
-* @param {function} superConstructor
-* @param {object} [props]
-* @param {object} [descriptors]
-*
-* @returns {void}
-*/
+
 var inherits = (constructor, superConstructor, props, descriptors) => {
 	constructor.prototype = Object.create(superConstructor.prototype, descriptors);
 	Object.defineProperty(constructor.prototype, "constructor", {
@@ -394,15 +187,7 @@ var inherits = (constructor, superConstructor, props, descriptors) => {
 	Object.defineProperty(constructor, "super", { value: superConstructor.prototype });
 	props && Object.assign(constructor.prototype, props);
 };
-/**
-* Resolve object with deep prototype chain to a flat object
-* @param {Object} sourceObj source object
-* @param {Object} [destObj]
-* @param {Function|Boolean} [filter]
-* @param {Function} [propFilter]
-*
-* @returns {Object}
-*/
+
 var toFlatObject = (sourceObj, destObj, filter, propFilter) => {
 	let props;
 	let i;
@@ -424,15 +209,7 @@ var toFlatObject = (sourceObj, destObj, filter, propFilter) => {
 	} while (sourceObj && (!filter || filter(sourceObj, destObj)) && sourceObj !== Object.prototype);
 	return destObj;
 };
-/**
-* Determines whether a string ends with the characters of a specified string
-*
-* @param {String} str
-* @param {String} searchString
-* @param {Number} [position= 0]
-*
-* @returns {boolean}
-*/
+
 var endsWith = (str, searchString, position) => {
 	str = String(str);
 	if (position === void 0 || position > str.length) position = str.length;
@@ -440,13 +217,7 @@ var endsWith = (str, searchString, position) => {
 	const lastIndex = str.indexOf(searchString, position);
 	return lastIndex !== -1 && lastIndex === position;
 };
-/**
-* Returns new array from array like object or null if failed
-*
-* @param {*} [thing]
-*
-* @returns {?Array}
-*/
+
 var toArray = (thing) => {
 	if (!thing) return null;
 	if (isArray(thing)) return thing;
@@ -456,27 +227,13 @@ var toArray = (thing) => {
 	while (i-- > 0) arr[i] = thing[i];
 	return arr;
 };
-/**
-* Checking if the Uint8Array exists and if it does, it returns a function that checks if the
-* thing passed in is an instance of Uint8Array
-*
-* @param {TypedArray}
-*
-* @returns {Array}
-*/
+
 var isTypedArray = ((TypedArray) => {
 	return (thing) => {
 		return TypedArray && thing instanceof TypedArray;
 	};
 })(typeof Uint8Array !== "undefined" && getPrototypeOf(Uint8Array));
-/**
-* For each entry in the object, call the function with the key and value.
-*
-* @param {Object<any, any>} obj - The object to iterate over.
-* @param {Function} fn - The function to call for each entry.
-*
-* @returns {void}
-*/
+
 var forEachEntry = (obj, fn) => {
 	const _iterator = (obj && obj[iterator]).call(obj);
 	let result;
@@ -485,14 +242,7 @@ var forEachEntry = (obj, fn) => {
 		fn.call(obj, pair[0], pair[1]);
 	}
 };
-/**
-* It takes a regular expression and a string, and returns an array of all the matches
-*
-* @param {string} regExp - The regular expression to match against.
-* @param {string} str - The string to search.
-*
-* @returns {Array<boolean>}
-*/
+
 var matchAll = (regExp, str) => {
 	let matches;
 	const arr = [];
@@ -506,13 +256,7 @@ var toCamelCase = (str) => {
 	});
 };
 var hasOwnProperty = (({ hasOwnProperty }) => (obj, prop) => hasOwnProperty.call(obj, prop))(Object.prototype);
-/**
-* Determine if a value is a RegExp object
-*
-* @param {*} val The value to test
-*
-* @returns {boolean} True if value is a RegExp object, otherwise false
-*/
+
 var isRegExp = kindOfTest("RegExp");
 var reduceDescriptors = (obj, reducer) => {
 	const descriptors = Object.getOwnPropertyDescriptors(obj);
@@ -523,10 +267,7 @@ var reduceDescriptors = (obj, reducer) => {
 	});
 	Object.defineProperties(obj, reducedDescriptors);
 };
-/**
-* Makes all methods read-only
-* @param {Object} obj
-*/
+
 var freezeMethods = (obj) => {
 	reduceDescriptors(obj, (descriptor, name) => {
 		if (isFunction$1(obj) && [
@@ -546,14 +287,7 @@ var freezeMethods = (obj) => {
 		};
 	});
 };
-/**
-* Converts an array or a delimited string into an object set with values as keys and true as values.
-* Useful for fast membership checks.
-*
-* @param {Array|string} arrayOrString - The array or string to convert.
-* @param {string} delimiter - The delimiter to use if input is a string.
-* @returns {Object} An object with keys from the array or string, values set to true.
-*/
+
 var toObjectSet = (arrayOrString, delimiter) => {
 	const obj = {};
 	const define = (arr) => {
@@ -568,22 +302,11 @@ var noop = () => {};
 var toFiniteNumber = (value, defaultValue) => {
 	return value != null && Number.isFinite(value = +value) ? value : defaultValue;
 };
-/**
-* If the thing is a FormData object, return true, otherwise return false.
-*
-* @param {unknown} thing - The thing to check.
-*
-* @returns {boolean}
-*/
+
 function isSpecCompliantForm(thing) {
 	return !!(thing && isFunction$1(thing.append) && thing[toStringTag] === "FormData" && thing[iterator]);
 }
-/**
-* Recursively converts an object to a JSON-compatible object, handling circular references and Buffers.
-*
-* @param {Object} obj - The object to convert.
-* @returns {Object} The JSON-compatible object.
-*/
+
 var toJSONObject = (obj) => {
 	const stack = new Array(10);
 	const visit = (source, i) => {
@@ -605,28 +328,11 @@ var toJSONObject = (obj) => {
 	};
 	return visit(obj, 0);
 };
-/**
-* Determines if a value is an async function.
-*
-* @param {*} thing - The value to test.
-* @returns {boolean} True if value is an async function, otherwise false.
-*/
+
 var isAsyncFn = kindOfTest("AsyncFunction");
-/**
-* Determines if a value is thenable (has then and catch methods).
-*
-* @param {*} thing - The value to test.
-* @returns {boolean} True if value is thenable, otherwise false.
-*/
+
 var isThenable = (thing) => thing && (isObject(thing) || isFunction$1(thing)) && isFunction$1(thing.then) && isFunction$1(thing.catch);
-/**
-* Provides a cross-platform setImmediate implementation.
-* Uses native setImmediate if available, otherwise falls back to postMessage or setTimeout.
-*
-* @param {boolean} setImmediateSupported - Whether setImmediate is supported.
-* @param {boolean} postMessageSupported - Whether postMessage is supported.
-* @returns {Function} A function to schedule a callback asynchronously.
-*/
+
 var _setImmediate = ((setImmediateSupported, postMessageSupported) => {
 	if (setImmediateSupported) return setImmediate;
 	return postMessageSupported ? ((token, callbacks) => {
@@ -639,12 +345,7 @@ var _setImmediate = ((setImmediateSupported, postMessageSupported) => {
 		};
 	})(`axios@${Math.random()}`, []) : (cb) => setTimeout(cb);
 })(typeof setImmediate === "function", isFunction$1(_global.postMessage));
-/**
-* Schedules a microtask or asynchronous callback as soon as possible.
-* Uses queueMicrotask if available, otherwise falls back to process.nextTick or _setImmediate.
-*
-* @type {Function}
-*/
+
 var asap = typeof queueMicrotask !== "undefined" ? queueMicrotask.bind(_global) : typeof process !== "undefined" && process.nextTick || _setImmediate;
 var isIterable = (thing) => thing != null && isFunction$1(thing[iterator]);
 var utils_default = {
@@ -708,8 +409,6 @@ var utils_default = {
 	asap,
 	isIterable
 };
-//#endregion
-//#region node_modules/axios/lib/core/AxiosError.js
 var AxiosError$1 = class AxiosError$1 extends Error {
 	static from(error, code, config, request, response, customProps) {
 		const axiosError = new AxiosError$1(error.message, code || error.code, config, request, response);
@@ -719,17 +418,7 @@ var AxiosError$1 = class AxiosError$1 extends Error {
 		customProps && Object.assign(axiosError, customProps);
 		return axiosError;
 	}
-	/**
-	* Create an Error with the specified message, config, error code, request and response.
-	*
-	* @param {string} message The error message.
-	* @param {string} [code] The error code (for example, 'ECONNABORTED').
-	* @param {Object} [config] The config.
-	* @param {Object} [request] The request.
-	* @param {Object} [response] The response.
-	*
-	* @returns {Error} The created error.
-	*/
+
 	constructor(message, code, config, request, response) {
 		super(message);
 		Object.defineProperty(this, "message", {
@@ -776,37 +465,15 @@ AxiosError$1.ERR_BAD_REQUEST = "ERR_BAD_REQUEST";
 AxiosError$1.ERR_CANCELED = "ERR_CANCELED";
 AxiosError$1.ERR_NOT_SUPPORT = "ERR_NOT_SUPPORT";
 AxiosError$1.ERR_INVALID_URL = "ERR_INVALID_URL";
-//#endregion
-//#region node_modules/axios/lib/helpers/toFormData.js
-/**
-* Determines if the given thing is a array or js object.
-*
-* @param {string} thing - The object or array to be visited.
-*
-* @returns {boolean}
-*/
+
 function isVisitable(thing) {
 	return utils_default.isPlainObject(thing) || utils_default.isArray(thing);
 }
-/**
-* It removes the brackets from the end of a string
-*
-* @param {string} key - The key of the parameter.
-*
-* @returns {string} the key without the brackets.
-*/
+
 function removeBrackets(key) {
 	return utils_default.endsWith(key, "[]") ? key.slice(0, -2) : key;
 }
-/**
-* It takes a path, a key, and a boolean, and returns a string
-*
-* @param {string} path - The path to the current key.
-* @param {string} key - The key of the current object being iterated over.
-* @param {string} dots - If true, the key will be rendered with dots instead of brackets.
-*
-* @returns {string} The path to the current key.
-*/
+
 function renderKey(path, key, dots) {
 	if (!path) return key;
 	return path.concat(key).map(function each(token, i) {
@@ -814,41 +481,14 @@ function renderKey(path, key, dots) {
 		return !dots && i ? "[" + token + "]" : token;
 	}).join(dots ? "." : "");
 }
-/**
-* If the array is an array and none of its elements are visitable, then it's a flat array.
-*
-* @param {Array<any>} arr - The array to check
-*
-* @returns {boolean}
-*/
+
 function isFlatArray(arr) {
 	return utils_default.isArray(arr) && !arr.some(isVisitable);
 }
 var predicates = utils_default.toFlatObject(utils_default, {}, null, function filter(prop) {
 	return /^is[A-Z]/.test(prop);
 });
-/**
-* Convert a data object to FormData
-*
-* @param {Object} obj
-* @param {?Object} [formData]
-* @param {?Object} [options]
-* @param {Function} [options.visitor]
-* @param {Boolean} [options.metaTokens = true]
-* @param {Boolean} [options.dots = false]
-* @param {?Boolean} [options.indexes = false]
-*
-* @returns {Object}
-**/
-/**
-* It converts an object into a FormData object
-*
-* @param {Object<any, any>} obj - The object to convert to form data.
-* @param {string} formData - The FormData object to append to.
-* @param {Object<string, any>} options
-*
-* @returns
-*/
+
 function toFormData$1(obj, formData, options) {
 	if (!utils_default.isObject(obj)) throw new TypeError("target must be an object");
 	formData = formData || new FormData();
@@ -873,16 +513,7 @@ function toFormData$1(obj, formData, options) {
 		if (utils_default.isArrayBuffer(value) || utils_default.isTypedArray(value)) return useBlob && typeof Blob === "function" ? new Blob([value]) : Buffer.from(value);
 		return value;
 	}
-	/**
-	* Default visitor.
-	*
-	* @param {*} value
-	* @param {String|Number} key
-	* @param {Array<String|Number>} path
-	* @this {FormData}
-	*
-	* @returns {boolean} return true to visit the each prop of the value recursively
-	*/
+
 	function defaultVisitor(value, key, path) {
 		let arr = value;
 		if (utils_default.isReactNative(formData) && utils_default.isReactNativeBlob(value)) {
@@ -924,16 +555,7 @@ function toFormData$1(obj, formData, options) {
 	build(obj);
 	return formData;
 }
-//#endregion
-//#region node_modules/axios/lib/helpers/AxiosURLSearchParams.js
-/**
-* It encodes a string by replacing all characters that are not in the unreserved set with
-* their percent-encoded equivalents
-*
-* @param {string} str - The string to encode.
-*
-* @returns {string} The encoded string.
-*/
+
 function encode$1(str) {
 	const charMap = {
 		"!": "%21",
@@ -948,14 +570,7 @@ function encode$1(str) {
 		return charMap[match];
 	});
 }
-/**
-* It takes a params object and converts it to a FormData object
-*
-* @param {Object<string, any>} params - The parameters to be converted to a FormData object.
-* @param {Object<string, any>} options - The options object passed to the Axios constructor.
-*
-* @returns {void}
-*/
+
 function AxiosURLSearchParams(params, options) {
 	this._pairs = [];
 	params && toFormData$1(params, this, options);
@@ -972,28 +587,11 @@ prototype.toString = function toString(encoder) {
 		return _encode(pair[0]) + "=" + _encode(pair[1]);
 	}, "").join("&");
 };
-//#endregion
-//#region node_modules/axios/lib/helpers/buildURL.js
-/**
-* It replaces URL-encoded forms of `:`, `$`, `,`, and spaces with
-* their plain counterparts (`:`, `$`, `,`, `+`).
-*
-* @param {string} val The value to be encoded.
-*
-* @returns {string} The encoded value.
-*/
+
 function encode(val) {
 	return encodeURIComponent(val).replace(/%3A/gi, ":").replace(/%24/g, "$").replace(/%2C/gi, ",").replace(/%20/g, "+");
 }
-/**
-* Build a URL by appending params to the end
-*
-* @param {string} url The base of the url (e.g., http://www.google.com)
-* @param {object} [params] The params to be appended
-* @param {?(object|Function)} options
-*
-* @returns {string} The formatted url
-*/
+
 function buildURL(url, params, options) {
 	if (!params) return url;
 	const _encode = options && options.encode || encode;
@@ -1009,21 +607,11 @@ function buildURL(url, params, options) {
 	}
 	return url;
 }
-//#endregion
-//#region node_modules/axios/lib/core/InterceptorManager.js
 var InterceptorManager = class {
 	constructor() {
 		this.handlers = [];
 	}
-	/**
-	* Add a new interceptor to the stack
-	*
-	* @param {Function} fulfilled The function to handle `then` for a `Promise`
-	* @param {Function} rejected The function to handle `reject` for a `Promise`
-	* @param {Object} options The options for the interceptor, synchronous and runWhen
-	*
-	* @return {Number} An ID used to remove interceptor later
-	*/
+
 	use(fulfilled, rejected, options) {
 		this.handlers.push({
 			fulfilled,
@@ -1033,50 +621,27 @@ var InterceptorManager = class {
 		});
 		return this.handlers.length - 1;
 	}
-	/**
-	* Remove an interceptor from the stack
-	*
-	* @param {Number} id The ID that was returned by `use`
-	*
-	* @returns {void}
-	*/
+
 	eject(id) {
 		if (this.handlers[id]) this.handlers[id] = null;
 	}
-	/**
-	* Clear all interceptors from the stack
-	*
-	* @returns {void}
-	*/
+
 	clear() {
 		if (this.handlers) this.handlers = [];
 	}
-	/**
-	* Iterate over all the registered interceptors
-	*
-	* This method is particularly useful for skipping over any
-	* interceptors that may have become `null` calling `eject`.
-	*
-	* @param {Function} fn The function to call for each interceptor
-	*
-	* @returns {void}
-	*/
+
 	forEach(fn) {
 		utils_default.forEach(this.handlers, function forEachHandler(h) {
 			if (h !== null) fn(h);
 		});
 	}
 };
-//#endregion
-//#region node_modules/axios/lib/defaults/transitional.js
 var transitional_default = {
 	silentJSONParsing: true,
 	forcedJSONParsing: true,
 	clarifyTimeoutError: false,
 	legacyInterceptorReqResOrdering: true
 };
-//#endregion
-//#region node_modules/axios/lib/platform/browser/index.js
 var browser_default = {
 	isBrowser: true,
 	classes: {
@@ -1093,8 +658,6 @@ var browser_default = {
 		"data"
 	]
 };
-//#endregion
-//#region node_modules/axios/lib/platform/common/utils.js
 var utils_exports = /* @__PURE__ */ __exportAll({
 	hasBrowserEnv: () => hasBrowserEnv,
 	hasStandardBrowserEnv: () => hasStandardBrowserEnv,
@@ -1104,47 +667,19 @@ var utils_exports = /* @__PURE__ */ __exportAll({
 });
 var hasBrowserEnv = typeof window !== "undefined" && typeof document !== "undefined";
 var _navigator = typeof navigator === "object" && navigator || void 0;
-/**
-* Determine if we're running in a standard browser environment
-*
-* This allows axios to run in a web worker, and react-native.
-* Both environments support XMLHttpRequest, but not fully standard globals.
-*
-* web workers:
-*  typeof window -> undefined
-*  typeof document -> undefined
-*
-* react-native:
-*  navigator.product -> 'ReactNative'
-* nativescript
-*  navigator.product -> 'NativeScript' or 'NS'
-*
-* @returns {boolean}
-*/
+
 var hasStandardBrowserEnv = hasBrowserEnv && (!_navigator || [
 	"ReactNative",
 	"NativeScript",
 	"NS"
 ].indexOf(_navigator.product) < 0);
-/**
-* Determine if we're running in a standard browser webWorker environment
-*
-* Although the `isStandardBrowserEnv` method indicates that
-* `allows axios to run in a web worker`, the WebWorker will still be
-* filtered out due to its judgment standard
-* `typeof window !== 'undefined' && typeof document !== 'undefined'`.
-* This leads to a problem when axios post `FormData` in webWorker
-*/
+
 var hasStandardBrowserWebWorkerEnv = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope && typeof self.importScripts === "function";
 var origin = hasBrowserEnv && window.location.href || "http://localhost";
-//#endregion
-//#region node_modules/axios/lib/platform/index.js
 var platform_default = {
 	...utils_exports,
 	...browser_default
 };
-//#endregion
-//#region node_modules/axios/lib/helpers/toURLEncodedForm.js
 function toURLEncodedForm(data, options) {
 	return toFormData$1(data, new platform_default.classes.URLSearchParams(), {
 		visitor: function(value, key, path, helpers) {
@@ -1157,27 +692,13 @@ function toURLEncodedForm(data, options) {
 		...options
 	});
 }
-//#endregion
-//#region node_modules/axios/lib/helpers/formDataToJSON.js
-/**
-* It takes a string like `foo[x][y][z]` and returns an array like `['foo', 'x', 'y', 'z']
-*
-* @param {string} name - The name of the property to get.
-*
-* @returns An array of strings.
-*/
+
 function parsePropPath(name) {
 	return utils_default.matchAll(/\w+|\[(\w*)]/g, name).map((match) => {
 		return match[0] === "[]" ? "" : match[1] || match[0];
 	});
 }
-/**
-* Convert an array to an object.
-*
-* @param {Array<any>} arr - The array to convert to an object.
-*
-* @returns An object with the same keys and values as the array.
-*/
+
 function arrayToObject(arr) {
 	const obj = {};
 	const keys = Object.keys(arr);
@@ -1190,13 +711,7 @@ function arrayToObject(arr) {
 	}
 	return obj;
 }
-/**
-* It takes a FormData object and returns a JavaScript object
-*
-* @param {string} formData The FormData object to convert to JSON.
-*
-* @returns {Object<string, any> | null} The converted object.
-*/
+
 function formDataToJSON(formData) {
 	function buildPath(path, value, target, index) {
 		let name = path[index++];
@@ -1222,18 +737,7 @@ function formDataToJSON(formData) {
 	}
 	return null;
 }
-//#endregion
-//#region node_modules/axios/lib/defaults/index.js
-/**
-* It takes a string, tries to parse it, and if it fails, it returns the stringified version
-* of the input
-*
-* @param {any} rawValue - The value to be stringified.
-* @param {Function} parser - A function that parses a string into a JavaScript object.
-* @param {Function} encoder - A function that takes a value and returns a string.
-*
-* @returns {string} A stringified version of the rawValue.
-*/
+
 function stringifySafely(rawValue, parser, encoder) {
 	if (utils_default.isString(rawValue)) try {
 		(parser || JSON.parse)(rawValue);
@@ -1342,20 +846,7 @@ var ignoreDuplicateOf = utils_default.toObjectSet([
 	"retry-after",
 	"user-agent"
 ]);
-/**
-* Parse headers into an object
-*
-* ```
-* Date: Wed, 27 Aug 2014 08:58:49 GMT
-* Content-Type: application/json
-* Connection: keep-alive
-* Transfer-Encoding: chunked
-* ```
-*
-* @param {String} rawHeaders Headers needing to be parsed
-*
-* @returns {Object} Headers parsed into an object
-*/
+
 var parseHeaders_default = (rawHeaders) => {
 	const parsed = {};
 	let key;
@@ -1372,8 +863,6 @@ var parseHeaders_default = (rawHeaders) => {
 	});
 	return parsed;
 };
-//#endregion
-//#region node_modules/axios/lib/core/AxiosHeaders.js
 var $internals = Symbol("internals");
 var isValidHeaderValue = (value) => !/[\r\n]/.test(value);
 function assertValidHeaderValue(value, header) {
@@ -1594,16 +1083,7 @@ utils_default.reduceDescriptors(AxiosHeaders$1.prototype, ({ value }, key) => {
 	};
 });
 utils_default.freezeMethods(AxiosHeaders$1);
-//#endregion
-//#region node_modules/axios/lib/core/transformData.js
-/**
-* Transform the data for a request or a response
-*
-* @param {Array|Function} fns A single function or Array of functions
-* @param {?Object} response The response object
-*
-* @returns {*} The resulting transformed data
-*/
+
 function transformData(fns, response) {
 	const config = this || defaults;
 	const context = response || config;
@@ -1620,54 +1100,25 @@ function transformData(fns, response) {
 function isCancel$1(value) {
 	return !!(value && value.__CANCEL__);
 }
-//#endregion
-//#region node_modules/axios/lib/cancel/CanceledError.js
 var CanceledError$1 = class extends AxiosError$1 {
-	/**
-	* A `CanceledError` is an object that is thrown when an operation is canceled.
-	*
-	* @param {string=} message The message.
-	* @param {Object=} config The config.
-	* @param {Object=} request The request.
-	*
-	* @returns {CanceledError} The created error.
-	*/
+
 	constructor(message, config, request) {
 		super(message == null ? "canceled" : message, AxiosError$1.ERR_CANCELED, config, request);
 		this.name = "CanceledError";
 		this.__CANCEL__ = true;
 	}
 };
-//#endregion
-//#region node_modules/axios/lib/core/settle.js
-/**
-* Resolve or reject a Promise based on response status.
-*
-* @param {Function} resolve A function that resolves the promise.
-* @param {Function} reject A function that rejects the promise.
-* @param {object} response The response.
-*
-* @returns {object} The response.
-*/
+
 function settle(resolve, reject, response) {
 	const validateStatus = response.config.validateStatus;
 	if (!response.status || !validateStatus || validateStatus(response.status)) resolve(response);
 	else reject(new AxiosError$1("Request failed with status code " + response.status, [AxiosError$1.ERR_BAD_REQUEST, AxiosError$1.ERR_BAD_RESPONSE][Math.floor(response.status / 100) - 4], response.config, response.request, response));
 }
-//#endregion
-//#region node_modules/axios/lib/helpers/parseProtocol.js
 function parseProtocol(url) {
 	const match = /^([-+\w]{1,25})(:?\/\/|:)/.exec(url);
 	return match && match[1] || "";
 }
-//#endregion
-//#region node_modules/axios/lib/helpers/speedometer.js
-/**
-* Calculate data maxRate
-* @param {Number} [samplesCount= 10]
-* @param {Number} [min= 1000]
-* @returns {Function}
-*/
+
 function speedometer(samplesCount, min) {
 	samplesCount = samplesCount || 10;
 	const bytes = new Array(samplesCount);
@@ -1695,14 +1146,7 @@ function speedometer(samplesCount, min) {
 		return passed ? Math.round(bytesCount * 1e3 / passed) : void 0;
 	};
 }
-//#endregion
-//#region node_modules/axios/lib/helpers/throttle.js
-/**
-* Throttle decorator
-* @param {Function} fn
-* @param {Number} freq
-* @return {Function}
-*/
+
 function throttle(fn, freq) {
 	let timestamp = 0;
 	let threshold = 1e3 / freq;
@@ -1766,14 +1210,10 @@ var progressEventDecorator = (total, throttled) => {
 	}), throttled[1]];
 };
 var asyncDecorator = (fn) => (...args) => utils_default.asap(() => fn(...args));
-//#endregion
-//#region node_modules/axios/lib/helpers/isURLSameOrigin.js
 var isURLSameOrigin_default = platform_default.hasStandardBrowserEnv ? ((origin, isMSIE) => (url) => {
 	url = new URL(url, platform_default.origin);
 	return origin.protocol === url.protocol && origin.host === url.host && (isMSIE || origin.port === url.port);
 })(new URL(platform_default.origin), platform_default.navigator && /(msie|trident)/i.test(platform_default.navigator.userAgent)) : () => true;
-//#endregion
-//#region node_modules/axios/lib/helpers/cookies.js
 var cookies_default = platform_default.hasStandardBrowserEnv ? {
 	write(name, value, expires, path, domain, secure, sameSite) {
 		if (typeof document === "undefined") return;
@@ -1800,44 +1240,16 @@ var cookies_default = platform_default.hasStandardBrowserEnv ? {
 	},
 	remove() {}
 };
-//#endregion
-//#region node_modules/axios/lib/helpers/isAbsoluteURL.js
-/**
-* Determines whether the specified URL is absolute
-*
-* @param {string} url The URL to test
-*
-* @returns {boolean} True if the specified URL is absolute, otherwise false
-*/
+
 function isAbsoluteURL(url) {
 	if (typeof url !== "string") return false;
 	return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
 }
-//#endregion
-//#region node_modules/axios/lib/helpers/combineURLs.js
-/**
-* Creates a new URL by combining the specified URLs
-*
-* @param {string} baseURL The base URL
-* @param {string} relativeURL The relative URL
-*
-* @returns {string} The combined URL
-*/
+
 function combineURLs(baseURL, relativeURL) {
 	return relativeURL ? baseURL.replace(/\/?\/$/, "") + "/" + relativeURL.replace(/^\/+/, "") : baseURL;
 }
-//#endregion
-//#region node_modules/axios/lib/core/buildFullPath.js
-/**
-* Creates a new URL by combining the baseURL with the requestedURL,
-* only when the requestedURL is not already an absolute URL.
-* If the requestURL is absolute, this function returns the requestedURL untouched.
-*
-* @param {string} baseURL The base URL
-* @param {string} requestedURL Absolute or relative URL to combine
-*
-* @returns {string} The combined full path
-*/
+
 function buildFullPath(baseURL, requestedURL, allowAbsoluteUrls) {
 	let isRelativeUrl = !isAbsoluteURL(requestedURL);
 	if (baseURL && (isRelativeUrl || allowAbsoluteUrls == false)) return combineURLs(baseURL, requestedURL);
@@ -1846,15 +1258,7 @@ function buildFullPath(baseURL, requestedURL, allowAbsoluteUrls) {
 //#endregion
 //#region node_modules/axios/lib/core/mergeConfig.js
 var headersToObject = (thing) => thing instanceof AxiosHeaders$1 ? { ...thing } : thing;
-/**
-* Config-specific merge-function which creates a new config-object
-* by merging two configuration objects together.
-*
-* @param {Object} config1
-* @param {Object} config2
-*
-* @returns {Object} New object resulting from merging config2 to config1
-*/
+
 function mergeConfig$1(config1, config2) {
 	config2 = config2 || {};
 	const config = {};
@@ -2307,17 +1711,7 @@ var getFetch = (config) => {
 	return target;
 };
 getFetch();
-//#endregion
-//#region node_modules/axios/lib/adapters/adapters.js
-/**
-* Known adapters mapping.
-* Provides environment-specific adapters for Axios:
-* - `http` for Node.js
-* - `xhr` for browsers
-* - `fetch` for fetch API-based requests
-*
-* @type {Object<string, Function|Object>}
-*/
+
 var knownAdapters = {
 	http: null,
 	xhr: xhr_default,
@@ -2331,30 +1725,10 @@ utils_default.forEach(knownAdapters, (fn, value) => {
 		Object.defineProperty(fn, "adapterName", { value });
 	}
 });
-/**
-* Render a rejection reason string for unknown or unsupported adapters
-*
-* @param {string} reason
-* @returns {string}
-*/
 var renderReason = (reason) => `- ${reason}`;
-/**
-* Check if the adapter is resolved (function, null, or false)
-*
-* @param {Function|null|false} adapter
-* @returns {boolean}
-*/
+
 var isResolvedHandle = (adapter) => utils_default.isFunction(adapter) || adapter === null || adapter === false;
-/**
-* Get the first suitable adapter from the provided list.
-* Tries each adapter in order until a supported one is found.
-* Throws an AxiosError if no adapter is suitable.
-*
-* @param {Array<string|Function>|string|Function} adapters - Adapter(s) by name or function.
-* @param {Object} config - Axios request configuration
-* @throws {AxiosError} If no suitable adapter is available
-* @returns {Function} The resolved adapter function
-*/
+
 function getAdapter$1(adapters, config) {
 	adapters = utils_default.isArray(adapters) ? adapters : [adapters];
 	const { length } = adapters;
@@ -2385,26 +1759,12 @@ var adapters_default = {
 	getAdapter: getAdapter$1,
 	adapters: knownAdapters
 };
-//#endregion
-//#region node_modules/axios/lib/core/dispatchRequest.js
-/**
-* Throws a `CanceledError` if cancellation has been requested.
-*
-* @param {Object} config The config that is to be used for the request
-*
-* @returns {void}
-*/
+
 function throwIfCancellationRequested(config) {
 	if (config.cancelToken) config.cancelToken.throwIfRequested();
 	if (config.signal && config.signal.aborted) throw new CanceledError$1(null, config);
 }
-/**
-* Dispatch a request to the server using the configured adapter.
-*
-* @param {object} config The config that is to be used for the request
-*
-* @returns {Promise} The Promise to be fulfilled
-*/
+
 function dispatchRequest(config) {
 	throwIfCancellationRequested(config);
 	config.headers = AxiosHeaders$1.from(config.headers);
@@ -2449,15 +1809,7 @@ var validators$1 = {};
 	};
 });
 var deprecatedWarnings = {};
-/**
-* Transitional option validator
-*
-* @param {function|boolean?} validator - set to false if the transitional option has been removed
-* @param {string?} version - deprecated version / removed since version
-* @param {string?} message - some message with additional info
-*
-* @returns {function}
-*/
+
 validators$1.transitional = function transitional(validator, version, message) {
 	function formatMessage(opt, desc) {
 		return "[Axios v" + VERSION$1 + "] Transitional option '" + opt + "'" + desc + (message ? ". " + message : "");
@@ -2477,15 +1829,7 @@ validators$1.spelling = function spelling(correctSpelling) {
 		return true;
 	};
 };
-/**
-* Assert object's properties type
-*
-* @param {object} options
-* @param {object} schema
-* @param {boolean?} allowUnknown
-*
-* @returns {object}
-*/
+
 function assertOptions(options, schema, allowUnknown) {
 	if (typeof options !== "object") throw new AxiosError$1("options must be an object", AxiosError$1.ERR_BAD_OPTION_VALUE);
 	const keys = Object.keys(options);
@@ -2509,13 +1853,7 @@ var validator_default = {
 //#endregion
 //#region node_modules/axios/lib/core/Axios.js
 var validators = validator_default.validators;
-/**
-* Create a new instance of Axios
-*
-* @param {Object} instanceConfig The default config for the instance
-*
-* @return {Axios} A new instance of Axios
-*/
+
 var Axios$1 = class {
 	constructor(instanceConfig) {
 		this.defaults = instanceConfig || {};
@@ -2524,14 +1862,7 @@ var Axios$1 = class {
 			response: new InterceptorManager()
 		};
 	}
-	/**
-	* Dispatch a request
-	*
-	* @param {String|Object} configOrUrl The config specific for this request (merged with this.defaults)
-	* @param {?Object} config
-	*
-	* @returns {Promise} The Promise to be fulfilled
-	*/
+
 	async request(configOrUrl, config) {
 		try {
 			return await this._request(configOrUrl, config);
@@ -2679,15 +2010,7 @@ utils_default.forEach([
 	Axios$1.prototype[method] = generateHTTPMethod();
 	Axios$1.prototype[method + "Form"] = generateHTTPMethod(true);
 });
-//#endregion
-//#region node_modules/axios/lib/cancel/CancelToken.js
-/**
-* A `CancelToken` is an object that can be used to request cancellation of an operation.
-*
-* @param {Function} executor The executor function.
-*
-* @returns {CancelToken}
-*/
+
 var CancelToken$1 = class CancelToken$1 {
 	constructor(executor) {
 		if (typeof executor !== "function") throw new TypeError("executor must be a function.");
@@ -2753,10 +2076,7 @@ var CancelToken$1 = class CancelToken$1 {
 		controller.signal.unsubscribe = () => this.unsubscribe(abort);
 		return controller.signal;
 	}
-	/**
-	* Returns an object that contains a new `CancelToken` and a function that, when called,
-	* cancels the `CancelToken`.
-	*/
+
 	static source() {
 		let cancel;
 		return {
@@ -2767,43 +2087,13 @@ var CancelToken$1 = class CancelToken$1 {
 		};
 	}
 };
-//#endregion
-//#region node_modules/axios/lib/helpers/spread.js
-/**
-* Syntactic sugar for invoking a function and expanding an array for arguments.
-*
-* Common use case would be to use `Function.prototype.apply`.
-*
-*  ```js
-*  function f(x, y, z) {}
-*  const args = [1, 2, 3];
-*  f.apply(null, args);
-*  ```
-*
-* With `spread` this example can be re-written.
-*
-*  ```js
-*  spread(function(x, y, z) {})([1, 2, 3]);
-*  ```
-*
-* @param {Function} callback
-*
-* @returns {Function}
-*/
+
 function spread$1(callback) {
 	return function wrap(arr) {
 		return callback.apply(null, arr);
 	};
 }
-//#endregion
-//#region node_modules/axios/lib/helpers/isAxiosError.js
-/**
-* Determines whether the payload is an error thrown by Axios
-*
-* @param {*} payload The value to test
-*
-* @returns {boolean} True if the payload is an error thrown by Axios, otherwise false
-*/
+
 function isAxiosError$1(payload) {
 	return utils_default.isObject(payload) && payload.isAxiosError === true;
 }
@@ -2883,15 +2173,7 @@ var HttpStatusCode$1 = {
 Object.entries(HttpStatusCode$1).forEach(([key, value]) => {
 	HttpStatusCode$1[value] = key;
 });
-//#endregion
-//#region node_modules/axios/lib/axios.js
-/**
-* Create an instance of Axios
-*
-* @param {Object} defaultConfig The default config for the instance
-*
-* @returns {Axios} A new instance of Axios
-*/
+
 function createInstance(defaultConfig) {
 	const context = new Axios$1(defaultConfig);
 	const instance = bind(Axios$1.prototype.request, context);
@@ -2922,10 +2204,6 @@ axios.formToJSON = (thing) => formDataToJSON(utils_default.isHTMLForm(thing) ? n
 axios.getAdapter = adapters_default.getAdapter;
 axios.HttpStatusCode = HttpStatusCode$1;
 axios.default = axios;
-//#endregion
-//#region node_modules/axios/index.js
 var { Axios, AxiosError, CanceledError, isCancel, CancelToken, VERSION, all, Cancel, isAxiosError, spread, toFormData, AxiosHeaders, HttpStatusCode, formToJSON, getAdapter, mergeConfig } = axios;
-//#endregion
 export { Axios, AxiosError, AxiosHeaders, Cancel, CancelToken, CanceledError, HttpStatusCode, VERSION, all, axios as default, formToJSON, getAdapter, isAxiosError, isCancel, mergeConfig, spread, toFormData };
 
-//# sourceMappingURL=axios.js.map

@@ -1,13 +1,5 @@
 import { createContext, useContext, useRef } from 'react';
 
-/**
- * Сохраняет состояние каталога между переходами.
- * Используем useRef (не useState) — не вызывает ререндер,
- * просто сохраняет данные пока компонент жив.
- *
- * При входе в /anime/:id и возврате "Назад" — каталог восстанавливает
- * последнюю страницу, фильтры и список аниме без нового запроса.
- */
 const CatalogContext = createContext(null);
 
 export function CatalogProvider({ children }) {
