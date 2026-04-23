@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL
+  || (import.meta.env.DEV
+    ? 'http://localhost:8080'
+    : 'https://mediatracker-a2tr.onrender.com');
+
 const api = axios.create({
-  baseURL: 'https://mediatracker-a2tr.onrender.com',
+  baseURL: API_BASE_URL,
   withCredentials: false,
 });
 const J = { 'Content-Type': 'application/json' };

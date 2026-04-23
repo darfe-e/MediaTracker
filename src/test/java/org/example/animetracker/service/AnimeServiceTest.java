@@ -3,7 +3,9 @@ package org.example.animetracker.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,6 +18,7 @@ import org.example.animetracker.cache.AnimeSearchKey;
 import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.repository.AnimeRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,9 +36,18 @@ class AnimeServiceTest {
 
   @Mock private AnimeRepository  animeRepository;
   @Mock private AnimeSearchCache searchCache;
+  @Mock private AnimeNextAiringDateService animeNextAiringDateService;
 
   @InjectMocks
   private AnimeService animeService;
+
+  @BeforeEach
+  void setUp() {
+    lenient().when(animeNextAiringDateService.enrich(any(Page.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(animeNextAiringDateService.enrich(anyList()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+  }
 
   @Test
   @DisplayName("findByIdWithoutProblem — аниме не найдено → 404")

@@ -10,6 +10,7 @@ import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.model.Episode;
+import org.example.animetracker.model.Season;
 import org.hibernate.Hibernate;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -29,18 +30,7 @@ public class AnimeMapper {
         anime.getPosterUrl()
     );
 
-    LocalDate today = LocalDate.now();
-    LocalDate nextAiringDate = null;
-    if (Hibernate.isInitialized(anime.getSeasons())) {
-      nextAiringDate = anime.getSeasons().stream()
-          .filter(s -> Hibernate.isInitialized(s.getEpisodes()))
-          .flatMap(s -> s.getEpisodes().stream())
-          .map(Episode::getReleaseDate)
-          .filter(d -> d != null && d.isAfter(today))
-          .min(Comparator.naturalOrder())
-          .orElse(null);
-    }
-    dto.setNextAiringDate(nextAiringDate);
+    dto.setNextAiringDate(resolveNextAiringDate(anime));
     return dto;
   }
 
@@ -60,5 +50,41 @@ public class AnimeMapper {
         anime.getIsAnnounced(),
         anime.getPosterUrl()
     );
+  }
+
+  private static LocalDate resolveNextAiringDate(Anime anime) {
+    if (!Hibernate.isInitialized(anime.getSeasons())) {
+      return null;
+    }
+
+    LocalDate today = LocalDate.now();
+    return anime.getSeasons().stream()
+        .map(season -> getNearestUpcomingDate(season, today))
+        .filter(date -> date != null)
+        .min(Comparator.naturalOrder())
+        .orElse(null);
+  }
+
+  private static LocalDate getNearestUpcomingDate(Season season, LocalDate today) {
+    LocalDate nextEpisodeDate = null;
+    if (Hibernate.isInitialized(season.getEpisodes())) {
+      nextEpisodeDate = season.getEpisodes().stream()
+          .map(Episode::getReleaseDate)
+          .filter(date -> date != null && !date.isBefore(today))
+          .min(Comparator.naturalOrder())
+          .orElse(null);
+    }
+
+    LocalDate seasonReleaseDate = season.getReleaseDate();
+    if (seasonReleaseDate == null
+        || seasonReleaseDate.isBefore(today)
+        || Boolean.TRUE.equals(season.getIsReleased())) {
+      return nextEpisodeDate;
+    }
+
+    if (nextEpisodeDate == null || seasonReleaseDate.isBefore(nextEpisodeDate)) {
+      return seasonReleaseDate;
+    }
+    return nextEpisodeDate;
   }
 }

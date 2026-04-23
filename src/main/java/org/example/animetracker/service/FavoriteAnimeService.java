@@ -1,15 +1,12 @@
 package org.example.animetracker.service;
 
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Collections;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
-import org.example.animetracker.dto.EpisodeDto;
 import org.example.animetracker.dto.FavoriteAnimeDto;
 import org.example.animetracker.mapper.AnimeMapper;
 import org.example.animetracker.mapper.FavoriteAnimeMapper;
@@ -35,10 +32,13 @@ public class FavoriteAnimeService {
   private final FavoriteAnimeRepository favoriteAnimeRepository;
   private final AnimeRepository animeRepository;
   private final UserRepository userRepository;
+  private final AnimeNextAiringDateService animeNextAiringDateService;
 
   public Page<AnimeDto> getByUserIdSortedByAssessment(Long userId, Pageable pageable) {
-    return favoriteAnimeRepository.findAnimeByUserIdSortedByAssessment(userId, pageable)
-        .map(AnimeMapper::animeToDto);
+    return animeNextAiringDateService.enrich(
+        favoriteAnimeRepository.findAnimeByUserIdSortedByAssessment(userId, pageable)
+            .map(AnimeMapper::animeToDto)
+    );
   }
 
   @Transactional(readOnly = true)
@@ -57,7 +57,9 @@ public class FavoriteAnimeService {
   public Page<AnimeDto> getOngoingInCollection(Long userId, Pageable pageable) {
     Page<Anime> animes = favoriteAnimeRepository
         .getOngoingSortedByAssessment(userId, pageable);
-    return animes.map(AnimeMapper::animeToDto);
+    return animeNextAiringDateService.enrich(
+        animes.map(AnimeMapper::animeToDto)
+    );
   }
 
   @Transactional
@@ -163,13 +165,14 @@ public class FavoriteAnimeService {
     String q = query.toLowerCase().trim();
     Pageable all = PageRequest.of(0, 500);
 
-    return favoriteAnimeRepository
-        .findAnimeByUserIdSortedByAssessment(userId, all)
-        .stream()
-        .filter(anime -> anime.getTitle() != null
-            && anime.getTitle().toLowerCase().contains(q))
-        .limit(20)
-        .map(AnimeMapper::animeToDto)
-        .toList();
+    return animeNextAiringDateService.enrich(
+        favoriteAnimeRepository.findAnimeByUserIdSortedByAssessment(userId, all)
+            .stream()
+            .filter(anime -> anime.getTitle() != null
+                && anime.getTitle().toLowerCase().contains(q))
+            .limit(20)
+            .map(AnimeMapper::animeToDto)
+            .toList()
+    );
   }
 }

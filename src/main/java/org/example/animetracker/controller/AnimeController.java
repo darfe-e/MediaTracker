@@ -5,7 +5,9 @@ import lombok.AllArgsConstructor;
 import org.example.animetracker.controller.api.AnimeControllerApi;
 import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
+import org.example.animetracker.mapper.AnimeMapper;
 import org.example.animetracker.service.AnimeImportService;
+import org.example.animetracker.service.AnimeNextAiringDateService;
 import org.example.animetracker.service.AnimeService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +27,7 @@ public class AnimeController implements AnimeControllerApi {
 
   private final AnimeService animeService;
   private final AnimeImportService animeImportService;
+  private final AnimeNextAiringDateService animeNextAiringDateService;
 
   @GetMapping("/{id}")
   public ResponseEntity<AnimeDetailedDto> getById(@PathVariable Long id) {
@@ -60,11 +63,11 @@ public class AnimeController implements AnimeControllerApi {
     return animeService.findByTitle(title)
         .map(animeFromDb -> ResponseEntity.ok()
             .header("X-Data-Source", "database")
-            .body(org.example.animetracker.mapper.AnimeMapper.animeToDto(animeFromDb)))
+            .body(animeNextAiringDateService.enrich(AnimeMapper.animeToDto(animeFromDb))))
         .orElseGet(() -> animeImportService.importFromApi(title)
             .map(anime -> ResponseEntity.ok()
                 .header("X-Data-Source", "anilist-api")
-                .body(org.example.animetracker.mapper.AnimeMapper.animeToDto(anime)))
+                .body(animeNextAiringDateService.enrich(AnimeMapper.animeToDto(anime))))
             .orElse(ResponseEntity.notFound().build()));
   }
 

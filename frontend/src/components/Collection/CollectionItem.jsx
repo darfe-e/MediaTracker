@@ -4,35 +4,56 @@ import './CollectionItem.css';
 const PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='85'%3E%3Crect width='60' height='85' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' font-size='20' text-anchor='middle' dominant-baseline='middle' fill='%23333'%3E%E2%9B%A9%3C/text%3E%3C/svg%3E";
 const fixUrl = (u) => u ? u.replace(/^http:\/\//i, 'https://') : PH;
 
-function fmtDate(d) {
+function fmtDate(d, { yearOnly = false } = {}) {
   if (!d) return null;
   if (/^\d{2}\.\d{2}\.\d{4}$/.test(d)) return d;
+
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+  if (isoMatch) {
+    if (yearOnly && isoMatch[2] === '01' && isoMatch[3] === '01') {
+      return isoMatch[1];
+    }
+    return `${isoMatch[3]}.${isoMatch[2]}.${isoMatch[1]}`;
+  }
+
   const dt = new Date(d);
   if (isNaN(dt)) return d;
+  if (yearOnly && dt.getMonth() === 0 && dt.getDate() === 1) {
+    return String(dt.getFullYear());
+  }
   return dt.toLocaleDateString('ru-RU');
 }
 
-// Добавляем onRemove в пропсы
 export default function CollectionItem({ anime, userScore, nextDate, onRemove }) {
   const navigate = useNavigate();
 
-  const isOngoing   = !!anime.isOngoing;
+  const isOngoing = !!anime.isOngoing;
   const isAnnounced = !!anime.isAnnounced;
 
   const rowClass = isOngoing ? 'coll-item--ongoing' : isAnnounced ? 'coll-item--announced' : '';
 
-  let statusLabel, statusClass;
-  if (isOngoing)        { statusLabel = '● Онгоинг';   statusClass = 'status--ongoing'; }
-  else if (isAnnounced) { statusLabel = '◆ Анонс';     statusClass = 'status--announced'; }
-  else                  { statusLabel = '— Завершено'; statusClass = 'status--ended'; }
+  let statusLabel;
+  let statusClass;
+  if (isOngoing) {
+    statusLabel = '● Онгоинг';
+    statusClass = 'status--ongoing';
+  } else if (isAnnounced) {
+    statusLabel = '◆ Анонс';
+    statusClass = 'status--announced';
+  } else {
+    statusLabel = '— Завершено';
+    statusClass = 'status--ended';
+  }
 
-  const dateStr = (isOngoing || isAnnounced) && nextDate ? `📅 ${fmtDate(nextDate)}` : null;
+  const dateStr = (isOngoing || isAnnounced) && nextDate
+    ? `📅 ${fmtDate(nextDate, { yearOnly: isAnnounced })}`
+    : null;
 
   return (
     <article
       className={`coll-item ${rowClass}`}
       onClick={() => navigate(`/collection/${anime.id}`)}
-      style={{ maxWidth: '900px', margin: '0 auto 12px auto' }} // Фикс ширины и центровка
+      style={{ maxWidth: '900px', margin: '0 auto 12px auto' }}
     >
       <img
         className="coll-item__poster"
@@ -59,7 +80,6 @@ export default function CollectionItem({ anime, userScore, nextDate, onRemove })
           ? <><span className="score-star">★</span>{Number(userScore).toFixed(1)}</>
           : <span className="score-none">—</span>}
 
-        {/* Добавляем кнопку удаления, если передан обработчик */}
         {onRemove && (
           <button
             className="btn-danger"

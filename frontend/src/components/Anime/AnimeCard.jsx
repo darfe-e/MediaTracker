@@ -6,28 +6,38 @@ const fixUrl = (u) => u ? u.replace(/^http:\/\//i, 'https://') : PH;
 
 function getSeasonLabel(anime) {
   const fmt = anime.format?.toUpperCase?.();
-  if (fmt === 'MOVIE')   return 'Фильм';
-  if (fmt === 'OVA')     return 'OVA';
+  if (fmt === 'MOVIE') return 'Фильм';
+  if (fmt === 'OVA') return 'OVA';
   if (fmt === 'SPECIAL') return 'Спецвыпуск';
   const n = anime.numOfReleasedSeasons ?? 0;
   if (n === 0) return 'ONA / Фильм';
   return `${n} сезон(а)`;
 }
 
-// Форматирует дату в "01.10.2027"
-function fmtDate(isoStr) {
+function fmtDate(isoStr, { yearOnly = false } = {}) {
   if (!isoStr) return null;
+
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoStr);
+  if (isoMatch) {
+    if (yearOnly && isoMatch[2] === '01' && isoMatch[3] === '01') {
+      return isoMatch[1];
+    }
+    return `${isoMatch[3]}.${isoMatch[2]}.${isoMatch[1]}`;
+  }
+
   const d = new Date(isoStr);
   if (isNaN(d)) return null;
+  if (yearOnly && d.getMonth() === 0 && d.getDate() === 1) {
+    return String(d.getFullYear());
+  }
   return d.toLocaleDateString('ru-RU');
 }
 
 export default function AnimeCard({ anime, disableNav = false }) {
   const navigate = useNavigate();
 
-  // Показываем дату ближайшей серии если есть
   const dateLabel = (anime.isOngoing || anime.isAnnounced) && anime.nextAiringDate
-    ? `📅 ${fmtDate(anime.nextAiringDate)}`
+    ? `📅 ${fmtDate(anime.nextAiringDate, { yearOnly: anime.isAnnounced })}`
     : null;
 
   return (
@@ -44,7 +54,7 @@ export default function AnimeCard({ anime, disableNav = false }) {
         />
         <div className="anime-card__overlay">
           {anime.studio && <span className="anime-card__studio">{anime.studio}</span>}
-          {anime.isOngoing   && <span className="badge badge-ongoing">● Онгоинг</span>}
+          {anime.isOngoing && <span className="badge badge-ongoing">● Онгоинг</span>}
           {anime.isAnnounced && <span className="badge badge-announced">◆ Анонс</span>}
           {dateLabel && <span className="anime-card__date">{dateLabel}</span>}
         </div>

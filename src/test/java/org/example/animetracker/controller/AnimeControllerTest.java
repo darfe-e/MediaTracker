@@ -12,8 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.example.animetracker.dto.AnimeDetailedDto;
+import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.service.AnimeImportService;
+import org.example.animetracker.service.AnimeNextAiringDateService;
 import org.example.animetracker.service.AnimeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +37,7 @@ class AnimeControllerTest {
 
   @Mock private AnimeService animeService;
   @Mock private AnimeImportService animeImportService;
+  @Mock private AnimeNextAiringDateService animeNextAiringDateService;
 
   @InjectMocks
   private AnimeController controller;
@@ -80,6 +83,8 @@ class AnimeControllerTest {
     Anime anime = new Anime();
     anime.setId(1L);
     anime.setTitle("Naruto");
+    when(animeNextAiringDateService.enrich(any(AnimeDto.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
     when(animeImportService.importFromApi("Naruto")).thenReturn(Optional.of(anime));
 
     mockMvc.perform(get("/anime-catalogue/search").param("title", "Naruto"))
