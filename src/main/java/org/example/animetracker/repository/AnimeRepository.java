@@ -29,7 +29,8 @@ public interface AnimeRepository extends JpaRepository<Anime, Long>,
   @Query("SELECT DISTINCT a FROM Anime a "
       + "LEFT JOIN FETCH a.genres "
       + "LEFT JOIN FETCH a.seasons s "
-      + "WHERE a.id = :id")
+      + "WHERE a.id = :id "
+      + "ORDER BY s.releaseDate ASC NULLS LAST")
   Optional<Anime> findByIdWithDetails(@Param("id") Long id);
 
   Optional<Anime> findByExternalId(Long externalId);

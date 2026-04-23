@@ -8,19 +8,11 @@ import './AnimeDetailPage.css';
 const PH = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='340'%3E%3Crect width='240' height='340' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' font-size='48' text-anchor='middle' dominant-baseline='middle' fill='%23333'%3E%E2%9B%A9%3C/text%3E%3C/svg%3E";
 const fixUrl = (u) => u ? u.replace(/^http:\/\//i, 'https://') : PH;
 
-/**
- * Классифицируем сезон по полям из нового SeasonDto:
- *   format: TV / TV_SHORT / ONA → полноценный сезон
- *   format: OVA / MOVIE         → ova
- *   format: SPECIAL или 0 эп.  → special
- *   Fallback: totalEpisodes > 1 → season, == 1 → ova, == 0 → special
- */
 function classifyEntry(season) {
   const fmt = season.format?.toUpperCase();
   if (fmt === 'TV' || fmt === 'TV_SHORT' || fmt === 'ONA') return 'season';
   if (fmt === 'OVA' || fmt === 'MOVIE')                    return 'ova';
   if (fmt === 'SPECIAL')                                   return 'special';
-  // fallback по числу эпизодов
   const n = season.totalEpisodes ?? 0;
   if (n === 0) return 'special';
   if (n === 1) return 'ova';
@@ -34,7 +26,6 @@ function getLabel(season, realSeasonNumber) {
   return `Сезон ${realSeasonNumber}`;
 }
 
-// ── SeasonBlock — серии грузятся только при раскрытии ──────────────────────
 function SeasonBlock({ season, realSeasonNumber }) {
   const [open, setOpen]           = useState(false);
   const [episodes, setEpisodes]   = useState(null);
@@ -44,7 +35,6 @@ function SeasonBlock({ season, realSeasonNumber }) {
   const label = getLabel(season, realSeasonNumber);
   const epCount = season.totalEpisodes ?? 0;
 
-  // OVA и Спецвыпуски с 0-1 эп. не разворачиваем
   const isExpandable = type === 'season' || epCount > 1;
 
   const handleToggle = async () => {
@@ -65,7 +55,6 @@ function SeasonBlock({ season, realSeasonNumber }) {
     }
   };
 
-  // Компактная строка для OVA/Спецвыпуска без кнопки разворота
   if (!isExpandable) {
     return (
       <div className="season-block season-block--compact">
@@ -122,7 +111,6 @@ function SeasonBlock({ season, realSeasonNumber }) {
   );
 }
 
-// ── Главный компонент ───────────────────────────────────────────────────────
 export default function AnimeDetailPage() {
   const { id }   = useParams();
   const { user } = useAuth();
@@ -187,15 +175,8 @@ export default function AnimeDetailPage() {
     </AppLayout>
   );
 
-  // Сортируем сезоны по дате
-  const seasons = [...(anime.seasons ?? [])].sort((a, b) => {
-    if (!a.releaseDate && !b.releaseDate) return 0;
-    if (!a.releaseDate) return 1;
-    if (!b.releaseDate) return -1;
-    return new Date(a.releaseDate) - new Date(b.releaseDate);
-  });
+  const seasons = anime.seasons ?? [];
 
-  // Нумеруем только TV-сезоны
   let realSeasonCount = 0;
   const seasonNumbers = seasons.map(s => {
     if (classifyEntry(s) === 'season') { realSeasonCount++; return realSeasonCount; }
@@ -203,7 +184,6 @@ export default function AnimeDetailPage() {
   });
 
   const displaySeasons = anime.numOfReleasedSeasons ?? realSeasonCount;
-  // Общее число эп. — только из TV-сезонов
   const totalEp = seasons
     .filter(s => classifyEntry(s) === 'season')
     .reduce((sum, s) => sum + (s.totalEpisodes ?? 0), 0);
