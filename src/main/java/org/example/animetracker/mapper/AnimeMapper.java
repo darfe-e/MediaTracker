@@ -10,6 +10,7 @@ import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.model.Anime;
 import org.example.animetracker.model.Episode;
+import org.hibernate.Hibernate;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AnimeMapper {
@@ -29,13 +30,16 @@ public class AnimeMapper {
     );
 
     LocalDate today = LocalDate.now();
-    LocalDate nextAiringDate = anime.getSeasons().stream()
-        .flatMap(s -> s.getEpisodes().stream())
-        .map(Episode::getReleaseDate)
-        .filter(d -> d != null && d.isAfter(today))
-        .min(Comparator.naturalOrder())
-        .orElse(null);
-
+    LocalDate nextAiringDate = null;
+    if (Hibernate.isInitialized(anime.getSeasons())) {
+      nextAiringDate = anime.getSeasons().stream()
+          .filter(s -> Hibernate.isInitialized(s.getEpisodes()))
+          .flatMap(s -> s.getEpisodes().stream())
+          .map(Episode::getReleaseDate)
+          .filter(d -> d != null && d.isAfter(today))
+          .min(Comparator.naturalOrder())
+          .orElse(null);
+    }
     dto.setNextAiringDate(nextAiringDate);
     return dto;
   }
