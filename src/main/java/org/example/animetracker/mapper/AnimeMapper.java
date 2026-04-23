@@ -1,12 +1,15 @@
 package org.example.animetracker.mapper;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.example.animetracker.dto.AnimeDetailedDto;
 import org.example.animetracker.dto.AnimeDto;
 import org.example.animetracker.model.Anime;
+import org.example.animetracker.model.Episode;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AnimeMapper {
@@ -15,7 +18,7 @@ public class AnimeMapper {
     if (anime == null) {
       return null;
     }
-    return new AnimeDto(
+    AnimeDto dto =  new AnimeDto(
         anime.getId(),
         anime.getTitle(),
         anime.getNumOfReleasedSeasons(),
@@ -24,6 +27,17 @@ public class AnimeMapper {
         anime.getIsAnnounced(),
         anime.getPosterUrl()
     );
+
+    LocalDate today = LocalDate.now();
+    LocalDate nextAiringDate = anime.getSeasons().stream()
+        .flatMap(s -> s.getEpisodes().stream())
+        .map(Episode::getReleaseDate)
+        .filter(d -> d != null && d.isAfter(today))
+        .min(Comparator.naturalOrder())
+        .orElse(null);
+
+    dto.setNextAiringDate(nextAiringDate);
+    return dto;
   }
 
   public static AnimeDetailedDto animeToDetailedDto(Anime anime) {

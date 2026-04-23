@@ -160,7 +160,7 @@ export default function CollectionPage() {
                 <CollectionItem
                   anime={anime}
                   userScore={reviews[anime.id] ?? null}
-                  nextDate={nextDates[anime.id] ?? null}
+                  nextDate={anime.nextAiringDate ?? null}
                 />
               </div>
             ))}
