@@ -1,9 +1,9 @@
 package org.example.animetracker.mapper;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.Objects;
+
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.example.animetracker.dto.AnimeDetailedDto;
@@ -43,7 +43,7 @@ public class AnimeMapper {
         anime.getTitle(),
         anime.getNumOfReleasedSeasons(),
         anime.getStudio(),
-        new ArrayList<>(new HashSet<>(anime.getSeasons())).stream()
+        anime.getSeasons().stream()
             .map(SeasonMapper::seasonToDto)
             .toList(),
         anime.getIsOngoing(),
@@ -60,7 +60,7 @@ public class AnimeMapper {
     LocalDate today = LocalDate.now();
     return anime.getSeasons().stream()
         .map(season -> getNearestUpcomingDate(season, today))
-        .filter(date -> date != null)
+        .filter(Objects::nonNull)
         .min(Comparator.naturalOrder())
         .orElse(null);
   }

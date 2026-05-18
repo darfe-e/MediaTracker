@@ -23,9 +23,15 @@ export function AuthProvider({ children }) {
   });
 
   const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
-    saveToRegistry(userData); // сохраняем в реестр
+        const existing = findInRegistry(userData.name);
+    const merged = {
+      ...(existing ?? {}),
+      ...userData,
+      avatarPath: userData.avatarPath ?? existing?.avatarPath ?? null,
+    };
+    setUser(merged);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(merged));
+    saveToRegistry(merged);
   };
 
   const logout = () => {
